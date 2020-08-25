@@ -1,5 +1,5 @@
 ---
-title: "Mapping Performance as a Function of Heritability"
+title: "All Shapes and Sizes (of QTL Effects) Welcome"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -121,7 +121,7 @@ dat %>%
   labs(x = "False-Positive Rate", y = "Power")
 ```
 
-```{r power precision plots, eval=FALSE, include=FALSE}
+```{r power precision plots, echo=FALSE}
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   ggplot(., mapping = aes(x = h2, y = Power, colour = algorithm)) +
@@ -179,7 +179,7 @@ summarized %>%
        y = "SD QTL Interval Width (Mb)")
 ```
 
-```{r power precision v varexplained, eval=FALSE, include=FALSE}
+```{r power precision v varexplained, echo=FALSE}
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   ggplot(., mapping = aes(x = mean.PVE, y = Power, colour = algorithm)) +
