@@ -1,0 +1,195 @@
+---
+title: "Mapping Performance as a Function of Heritability"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+```
+
+### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+setwd("~/Documents/projects/NemaScan_Performance/")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData")
+dat <- simuation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2))
+```
+
+### NemaScan simulation performance was assessed with the following experimental parameters:
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
+* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
+* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
+* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+
+```{r simulated QTL locations, echo=FALSE}
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!duplicated(Rep)) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = log10p)) + 
+  theme_bw() + 
+  geom_point() + 
+  facet_grid(.~CHROM, drop = TRUE) + 
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p))),
+       title = "Where were QTL Simulated?")
+
+
+dat %>%
+  dplyr::filter(Detected == TRUE) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = log10p, colour = Simulated)) + 
+  theme_bw() + 
+  geom_point() + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Simulated QTL?") + 
+  facet_grid(.~CHROM, drop = TRUE, scales = "free") + 
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p))),
+       title = "Where were QTL Detected?")
+```
+
+```{r power precision resolution, include=FALSE}
+# x <- dat %>%
+#   dplyr::filter(algorithm == "LMM-EXACT") %>%
+#   dplyr::filter(h2 == "0.1") %>%
+#   yardstick::conf_mat(truth = Simulated, estimate = Detected)
+
+power <- dat %>%
+  dplyr::group_by(h2, algorithm) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision <- dat %>%
+  dplyr::group_by(h2, algorithm) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+resolution <- dat %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, AF1, Frequency, interval_size, algorithm, h2, var.exp) %>%
+  dplyr::group_by(h2, algorithm) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(var.exp), median(var.exp), sd(var.exp))
+
+summarized <- power %>%
+  dplyr::full_join(., precision) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::left_join(.,resolution) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(var.exp)`*100,
+                median.PVE = `median(var.exp)`*100,
+                sd.PVE = `sd(var.exp)`*100, 
+                .keep = "unused")
+```
+
+```{r ROC curve, echo=FALSE}
+# CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
+dat %>%
+  dplyr::group_by(h2, algorithm) %>%
+  yardstick::roc_curve(Simulated, log10p) %>%
+  dplyr::mutate(h2 = as.numeric(h2)) %>%
+  ggplot(., mapping = aes(x = 1-specificity, y = sensitivity, group = h2)) + 
+  theme_minimal() + 
+  geom_path() +
+  geom_abline(lty = 3) + 
+  facet_grid(.~algorithm, scales = "free", space = "free") +  
+  labs(x = "False-Positive Rate", y = "Power")
+```
+
+```{r power precision plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Power, colour = algorithm)) +
+  theme_minimal() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = algorithm)) +
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  ylim(c(0,1)) + 
+  labs(title = "Power v. Heritability",
+       x = expression(italic(h^2)))
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Precision, colour = algorithm)) +
+  theme_minimal() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = algorithm)) +
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  ylim(c(0,1)) + 
+  labs(title = "Precision v. Heritability",
+       x = expression(italic(h^2)))
+```
+
+```{r interval width plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = algorithm)) +
+  theme_minimal() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  labs(title = "QTL Resolution v. Heritability",
+       x = expression(italic(h^2)),
+       y = "Mean QTL Interval Width (Mb)")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = Power, y = mean.interval.Mb, colour = algorithm)) +
+  theme_minimal() +
+  geom_jitter(width = 0.001, alpha = 0.7) + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  labs(title = "QTL Resolution v. Mapping Power",
+       x = "Power",
+       y = "Mean QTL Interval Width (Mb)")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = Power, y = sd.interval.Mb, colour = algorithm)) +
+  theme_minimal() +
+  geom_jitter(width = 0.001, alpha = 0.7) + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") +
+  labs(title = "Variance in QTL Resolution v. Power",
+       x = "Power",
+       y = "SD QTL Interval Width (Mb)")
+```
+
+
+```{r power precision v varexplained, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = mean.PVE, y = Power, colour = algorithm)) +
+  theme_minimal() +
+  geom_pointrange(aes(xmin = mean.PVE-sd.PVE,
+                      xmax = mean.PVE+sd.PVE), alpha = 0.7) + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  scale_x_continuous(breaks = seq(0,100,10)) + 
+  labs(title = "Power v. QTL Variance Explained",
+       x = "Variance Explained by QTL (%)",
+       y = "Mapping Power")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = mean.PVE, y = Precision, colour = algorithm)) +
+  theme_minimal() +
+  geom_pointrange(aes(xmin = mean.PVE-sd.PVE,
+                      xmax = mean.PVE+sd.PVE), alpha = 0.7) + 
+  scale_x_continuous(breaks = seq(0,100,10)) + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  labs(title = "Precision v. QTL Variance Explained",
+       x = "Variance Explained by QTL (%)",
+       y = "Mapping Precision")
+```

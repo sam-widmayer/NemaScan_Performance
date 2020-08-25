@@ -8,4 +8,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-Welcome to my research website.
+[CeNDR](https://www.elegansvariation.org/) is a resource maintained by the Andersen Lab which enables the collection and organization of *C. elegans* wild isolates for quantitative genetics and gene discovery. Recently, we have re-vamped our genome-wide association (GWA) mapping pipeline and expanded set of strains and genetic variants available for exploration. Analyses using simulations are currently ongoing to determine the power and utility of *C. elegans* for quantitative genetics.
+
+1. A [small overview](powerprecisionh2.html) of mapping performance with a single QTL with a defined effect.
