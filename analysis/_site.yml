@@ -1,7 +1,7 @@
-name: "NemaScan_Performance"
+name: NemaScan_Performance
 output_dir: ../docs
 navbar:
-  title: "NemaScan_Performance"
+  title: 'NemaScan: GWAS in C. elegans Wild Isolates'
   left:
   - text: Home
     href: index.html
@@ -9,6 +9,10 @@ navbar:
     href: about.html
   - text: License
     href: license.html
+  right:
+  - icon: fa-github
+    text: Source code
+    href: https://github.com/sam-widmayer/NemaScan_Performance
 output:
   workflowr::wflow_html:
     toc: yes
