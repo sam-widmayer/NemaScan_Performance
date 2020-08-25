@@ -1,5 +1,5 @@
 ---
-title: "How do various mapping algorithms perform provided the same QTL?"
+title: "Mapping Performance as a Function of Heritability"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -17,12 +17,16 @@ require(nationalparkcolors)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData")
 dat <- simuation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
-  dplyr::mutate(h2 = as.factor(h2))
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                POS = as.numeric(POS))
 ```
 
 ### NemaScan simulation performance was assessed with the following experimental parameters:
@@ -36,19 +40,31 @@ dat <- simuation.metrics.df %>%
 ```{r simulated QTL locations, echo=FALSE}
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(!duplicated(Rep)) %>%
   dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = log10p)) + 
+  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
   theme_bw() + 
   geom_point() + 
   facet_grid(.~CHROM, drop = TRUE) + 
   labs(x = "Genomic position (Mb)",
-       y = expression(-log[10](italic(p))),
+       y = "Causal QTL Effect",
        title = "Where were QTL Simulated?")
 
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = Simulated)) +
+  theme_minimal() + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
 
 dat %>%
   dplyr::filter(Detected == TRUE) %>%
+  dplyr::arrange(Simulated) %>%
   ggplot(mapping = aes(x = POS/1000000, y = log10p, colour = Simulated)) + 
   theme_bw() + 
   geom_point() + 
@@ -59,12 +75,7 @@ dat %>%
        title = "Where were QTL Detected?")
 ```
 
-```{r power precision resolution, include=FALSE}
-# x <- dat %>%
-#   dplyr::filter(algorithm == "LMM-EXACT") %>%
-#   dplyr::filter(h2 == "0.1") %>%
-#   yardstick::conf_mat(truth = Simulated, estimate = Detected)
-
+```{r power precision resolution, echo=FALSE}
 power <- dat %>%
   dplyr::group_by(h2, algorithm) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
@@ -110,7 +121,7 @@ dat %>%
   labs(x = "False-Positive Rate", y = "Power")
 ```
 
-```{r power precision plots, echo=FALSE}
+```{r power precision plots, eval=FALSE, include=FALSE}
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   ggplot(., mapping = aes(x = h2, y = Power, colour = algorithm)) +
@@ -133,6 +144,7 @@ summarized %>%
   labs(title = "Precision v. Heritability",
        x = expression(italic(h^2)))
 ```
+
 
 ```{r interval width plots, echo=FALSE}
 summarized %>%
@@ -167,8 +179,7 @@ summarized %>%
        y = "SD QTL Interval Width (Mb)")
 ```
 
-
-```{r power precision v varexplained, echo=FALSE}
+```{r power precision v varexplained, eval=FALSE, include=FALSE}
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   ggplot(., mapping = aes(x = mean.PVE, y = Power, colour = algorithm)) +
