@@ -174,7 +174,7 @@ print(knitr::kable(closest.FP.table,
 
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
