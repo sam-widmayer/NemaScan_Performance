@@ -1,5 +1,6 @@
 ---
-title: "All Shapes and Sizes (of QTL Effects) Welcome"
+title: "How Good Are Confidence Intervals?"
+subtitle: "Determining Default CI Width Selection From Simulations"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -11,6 +12,8 @@ editor_options:
 require(tidyverse)
 require(tidymodels)
 require(nationalparkcolors)
+require(knitr)
+require(RColorBrewer)
 ```
 
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
@@ -61,18 +64,6 @@ dat %>%
   xlim(c(0.05,0.5)) + 
   labs(x = "Minor Allele Frequency",
        y = "Frequency of Simulated QTL (Smoothed Density)")
-
-dat %>%
-  dplyr::filter(Detected == TRUE) %>%
-  dplyr::arrange(Simulated) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = log10p, colour = Simulated)) + 
-  theme_bw() + 
-  geom_point() + 
-  scale_colour_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Simulated QTL?") + 
-  facet_grid(.~CHROM, drop = TRUE, scales = "free") + 
-  labs(x = "Genomic position (Mb)",
-       y = expression(-log[10](italic(p))),
-       title = "Where were QTL Detected?")
 ```
 
 ```{r power precision resolution, echo=FALSE}
@@ -107,44 +98,82 @@ summarized <- power %>%
                 .keep = "unused")
 ```
 
-```{r ROC curve, echo=FALSE}
-# CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
-dat %>%
+```{r closest FP calculation, echo=FALSE, message=FALSE, warning=FALSE}
+reps <- dat %>%
+  dplyr::group_by(h2, Rep, algorithm) %>%
+  tidyr::nest()
+closest.FP.calc <- function(data, rep, h2, algorithm){
+# ALL REPS SEPARATED:
+  chrom.split <- data %>%
+    dplyr::group_by(CHROM) %>%
+    tidyr::nest()
+# CHROMOSOME LOOP START
+  closest.FP <- list()
+  for(i in 1:length(chrom.split$data)){
+  rep.CHROM <- chrom.split$data[[i]]
+# SEARCH FOR CLOSEST SIMULATED QTL
+# CALCULATE ABS(DISTANCE) FROM IT
+  if(TRUE %in% rep.CHROM$Simulated){
+    n.true.qtl <- length(rep.CHROM$Simulated[which(rep.CHROM$Simulated == TRUE)])
+    # more than 1 simulated QTL on the chromosome
+    if(n.true.qtl > 1){
+      simulated.QTL.POS  <- rep.CHROM %>%
+      dplyr::filter(Simulated == TRUE) %>%
+      dplyr::select(POS) %>%
+      as.list()
+    
+      dist.from.QTL <- list()
+      for(j in 1:nrow(rep.CHROM)){
+        QTL.dists <- list()
+        for(k in 1:length(simulated.QTL.POS[[1]])){
+        QTL.dists[[k]] <- rep.CHROM[j,]$POS - simulated.QTL.POS[[1]][k]
+      }
+      dist.from.QTL[[j]] <- min(abs(unlist(QTL.dists)))
+    }
+    closest.FP[[i]] <- rep.CHROM %>%
+      dplyr::mutate(dist.from.QTL = unlist(dist.from.QTL))%>%
+      dplyr::mutate(CHROM = chrom.split$CHROM[[i]])
+    
+  } else {
+    # only 1 simulated QTL on the chromosome
+    simulated.QTL.POS  <- rep.CHROM %>%
+      dplyr::filter(Simulated == TRUE) %>% 
+      dplyr::select(POS) %>%
+      as.numeric()
+    
+    closest.FP[[i]] <- rep.CHROM %>%
+      dplyr::mutate(dist.from.QTL = abs(as.numeric(rep.CHROM$POS) - simulated.QTL.POS)) %>%
+      dplyr::mutate(CHROM = chrom.split$CHROM[[i]])
+  }
+} else {
+    closest.FP[[i]] <- rep.CHROM %>%
+      dplyr::mutate(dist.from.QTL = "Extra-Chromosomal False-Positive")%>%
+      dplyr::mutate(CHROM = chrom.split$CHROM[[i]])}
+  }
+  do.call(rbind, closest.FP) %>%
+    as.data.frame() %>%
+    dplyr::mutate(Rep = rep, 
+                  h2 = h2,
+                  algorithm = algorithm)
+}
+closest.FP.nested <- purrr::pmap(.l = list(reps$data,
+                                      reps$Rep,
+                                      reps$h2,
+                                      reps$algorithm), 
+                                 .f = closest.FP.calc)
+closest.FP.df <- do.call(rbind, closest.FP.nested)
+
+closest.FP.table <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
   dplyr::group_by(h2, algorithm) %>%
-  yardstick::roc_curve(Simulated, log10p) %>%
-  dplyr::mutate(h2 = as.numeric(h2)) %>%
-  ggplot(., mapping = aes(x = 1-specificity, y = sensitivity, group = h2)) + 
-  theme_minimal() + 
-  geom_path() +
-  geom_abline(lty = 3) + 
-  facet_grid(.~algorithm, scales = "free", space = "free") +  
-  labs(x = "False-Positive Rate", y = "Power")
+  dplyr::summarise(mean(as.numeric(dist.from.QTL))) %>%
+  tidyr::pivot_wider(names_from = h2, values_from = `mean(as.numeric(dist.from.QTL))`)
+
+print(knitr::kable(closest.FP.table,
+                   format = "pandoc",
+                   caption = "Average Distance Between Simulated QTL and its Nearest False-Positive",
+                   digits = 3))
 ```
-
-```{r power precision plots, echo=FALSE}
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Power, colour = algorithm)) +
-  theme_minimal() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  ylim(c(0,1)) + 
-  labs(title = "Power v. Heritability",
-       x = expression(italic(h^2)))
-
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Precision, colour = algorithm)) +
-  theme_minimal() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  ylim(c(0,1)) + 
-  labs(title = "Precision v. Heritability",
-       x = expression(italic(h^2)))
-```
-
 
 ```{r interval width plots, echo=FALSE}
 summarized %>%
@@ -179,28 +208,18 @@ summarized %>%
        y = "SD QTL Interval Width (Mb)")
 ```
 
-```{r power precision v varexplained, echo=FALSE}
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = mean.PVE, y = Power, colour = algorithm)) +
-  theme_minimal() +
-  geom_pointrange(aes(xmin = mean.PVE-sd.PVE,
-                      xmax = mean.PVE+sd.PVE), alpha = 0.7) + 
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  scale_x_continuous(breaks = seq(0,100,10)) + 
-  labs(title = "Power v. QTL Variance Explained",
-       x = "Variance Explained by QTL (%)",
-       y = "Mapping Power")
-
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = mean.PVE, y = Precision, colour = algorithm)) +
-  theme_minimal() +
-  geom_pointrange(aes(xmin = mean.PVE-sd.PVE,
-                      xmax = mean.PVE+sd.PVE), alpha = 0.7) + 
-  scale_x_continuous(breaks = seq(0,100,10)) + 
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  labs(title = "Precision v. QTL Variance Explained",
-       x = "Variance Explained by QTL (%)",
-       y = "Mapping Precision")
+```{r echo=FALSE, fig.height=8, fig.width=6, message=FALSE, warning=FALSE}
+closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
+  dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
+  dplyr::arrange(h2) %>%
+  ggplot(., mapping = aes(x = as.numeric(dist.from.QTL)/1000000, stat(count), fill = h2)) + 
+  theme_minimal() + 
+  geom_density(alpha = 0.4) + 
+  facet_grid(algorithm~.) + 
+  scale_fill_brewer(palette = "Greens", name = "Trait Heritability") + 
+  theme(legend.position = "top") + 
+  labs(x = "False-Positive Distance from Nearest Simulated QTL (Mb)",
+       y = "Frequency")
 ```
+
