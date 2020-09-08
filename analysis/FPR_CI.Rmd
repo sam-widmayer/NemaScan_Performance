@@ -13,6 +13,7 @@ require(tidyverse)
 require(tidymodels)
 require(nationalparkcolors)
 require(knitr)
+require(kableExtra)
 require(RColorBrewer)
 ```
 
@@ -173,11 +174,6 @@ print(knitr::kable(closest.FP.table,
                    format = "pandoc",
                    caption = "Average Distance Between Simulated QTL and its Nearest False-Positive",
                    digits = 3))
-
-print(knitr::kable(closest.FP.table,
-                   format = "pandoc",
-                   caption = "Average Distance Between Simulated QTL and its Nearest False-Positive",
-                   digits = 3))
 ```
 
 ```{r echo=FALSE, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
@@ -194,17 +190,28 @@ closest.FP.df %>%
   labs(x = "False-Positive Distance from Nearest Simulated QTL (Mb)",
        y = "Frequency")
 
-# closest.FP.df %>%
-#   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
-#   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
-#   dplyr::arrange(h2) %>%
-#   ggplot(., mapping = aes(x = as.numeric(dist.from.QTL)/1000000, stat(count), fill = h2)) + 
-#   theme_minimal() + 
-#   geom_density(alpha = 0.4) + 
-#   facet_grid(algorithm~.) + 
-#   scale_fill_brewer(palette = "Greens", name = "Trait Heritability") + 
-#   theme(legend.position = "top") + 
-#   labs(x = "False-Positive Distance from Nearest Simulated QTL (Mb)",
-#        y = "Frequency")
+closest.FP.df %>%
+  dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
+  dplyr::arrange(h2) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = h2)) +
+  theme_minimal() +
+  geom_point(alpha = 0.4, shape = 21) +
+  facet_grid(.~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  scale_fill_brewer(palette = "Greens", name = "Trait Heritability") +
+  theme(legend.position = "top")
+
+closest.FP.df %>%
+  dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
+  dplyr::arrange(algorithm) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = algorithm)) +
+  theme_minimal() +
+  geom_point(alpha = 0.5, shape = 21) +
+  facet_grid(.~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  theme(legend.position = "top")
 ```
 
