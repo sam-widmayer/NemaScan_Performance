@@ -4,7 +4,7 @@ subtitle: "Determining Default CI Width Selection From Simulations"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
-    toc: false
+    df_print: paged
 editor_options:
   chunk_output_type: console
 ---
@@ -173,42 +173,14 @@ print(knitr::kable(closest.FP.table,
                    format = "pandoc",
                    caption = "Average Distance Between Simulated QTL and its Nearest False-Positive",
                    digits = 3))
+
+print(knitr::kable(closest.FP.table,
+                   format = "pandoc",
+                   caption = "Average Distance Between Simulated QTL and its Nearest False-Positive",
+                   digits = 3))
 ```
 
-```{r interval width plots, echo=FALSE}
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = algorithm)) +
-  theme_minimal() +
-  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
-                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  labs(title = "QTL Resolution v. Heritability",
-       x = expression(italic(h^2)),
-       y = "Mean QTL Interval Width (Mb)")
-
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = Power, y = mean.interval.Mb, colour = algorithm)) +
-  theme_minimal() +
-  geom_jitter(width = 0.001, alpha = 0.7) + 
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  labs(title = "QTL Resolution v. Mapping Power",
-       x = "Power",
-       y = "Mean QTL Interval Width (Mb)")
-
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = Power, y = sd.interval.Mb, colour = algorithm)) +
-  theme_minimal() +
-  geom_jitter(width = 0.001, alpha = 0.7) + 
-  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") +
-  labs(title = "Variance in QTL Resolution v. Power",
-       x = "Power",
-       y = "SD QTL Interval Width (Mb)")
-```
-
-```{r echo=FALSE, fig.height=8, fig.width=6, message=FALSE, warning=FALSE}
+```{r echo=FALSE, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
@@ -221,5 +193,18 @@ closest.FP.df %>%
   theme(legend.position = "top") + 
   labs(x = "False-Positive Distance from Nearest Simulated QTL (Mb)",
        y = "Frequency")
+
+# closest.FP.df %>%
+#   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
+#   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
+#   dplyr::arrange(h2) %>%
+#   ggplot(., mapping = aes(x = as.numeric(dist.from.QTL)/1000000, stat(count), fill = h2)) + 
+#   theme_minimal() + 
+#   geom_density(alpha = 0.4) + 
+#   facet_grid(algorithm~.) + 
+#   scale_fill_brewer(palette = "Greens", name = "Trait Heritability") + 
+#   theme(legend.position = "top") + 
+#   labs(x = "False-Positive Distance from Nearest Simulated QTL (Mb)",
+#        y = "Frequency")
 ```
 
