@@ -4,7 +4,6 @@ subtitle: "Determining Default CI Width Selection From Simulations"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
-    df_print: paged
 editor_options:
   chunk_output_type: console
 ---
@@ -12,8 +11,6 @@ editor_options:
 require(tidyverse)
 require(tidymodels)
 require(nationalparkcolors)
-require(knitr)
-require(kableExtra)
 require(RColorBrewer)
 ```
 
@@ -170,13 +167,14 @@ closest.FP.table <- closest.FP.df %>%
   dplyr::summarise(mean(as.numeric(dist.from.QTL))) %>%
   tidyr::pivot_wider(names_from = h2, values_from = `mean(as.numeric(dist.from.QTL))`)
 
-print(knitr::kable(closest.FP.table,
+print(knitr::kable(closest.FP.table, 
                    format = "pandoc",
-                   caption = "Average Distance Between Simulated QTL and its Nearest False-Positive",
+                   caption = "Average Distance Between False-Positives and the Nearest Simulated QTL",
                    digits = 3))
+
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
@@ -191,6 +189,34 @@ closest.FP.df %>%
        y = "Frequency")
 
 closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
+  dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
+  dplyr::arrange(h2) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = h2)) +
+  theme_minimal() +
+  geom_point(alpha = 0.4, shape = 21) +
+  facet_grid(.~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  scale_fill_brewer(palette = "Greens", name = "Trait Heritability") +
+  theme(legend.position = "top") + 
+  ggtitle("Intra-Chromosomal False-Positives")
+
+closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
+  dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
+  dplyr::arrange(h2) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = algorithm)) +
+  theme_minimal() +
+  geom_point(alpha = 0.4, shape = 21) +
+  facet_grid(.~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  theme(legend.position = "top") + 
+  ggtitle("Intra-Chromosomal False-Positives")
+
+closest.FP.df %>%
   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
   dplyr::arrange(h2) %>%
   ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = h2)) +
@@ -200,7 +226,8 @@ closest.FP.df %>%
   labs(x = "Genomic position (Mb)",
        y = expression(-log[10](italic(p)))) +
   scale_fill_brewer(palette = "Greens", name = "Trait Heritability") +
-  theme(legend.position = "top")
+  theme(legend.position = "top") + 
+  ggtitle("Extra-Chromosomal False-Positives")
 
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
@@ -212,6 +239,7 @@ closest.FP.df %>%
   labs(x = "Genomic position (Mb)",
        y = expression(-log[10](italic(p)))) +
   scale_fill_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
-  theme(legend.position = "top")
+  theme(legend.position = "top") + 
+  ggtitle("Extra-Chromosomal False-Positives")
 ```
 
