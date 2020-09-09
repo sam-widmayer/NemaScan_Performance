@@ -204,7 +204,7 @@ summarized %>%
        y = "Mean QTL Interval Width (Mb)")
 ```
 
-```{r IntraChromosomal FPsecho=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r IntraChromosomal FPs, echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
@@ -279,7 +279,7 @@ ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = to
 
 ```
 
-```{r ExtraChromosomal FPs echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r ExtraChromosomal FPs, echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
   dplyr::arrange(h2) %>%
