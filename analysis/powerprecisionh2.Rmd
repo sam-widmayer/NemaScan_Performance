@@ -17,11 +17,14 @@ require(nationalparkcolors)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_REDO.20200909.RData")
 dat <- simuation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
+    tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
   dplyr::mutate(h2 = as.factor(h2))
 ```
 
@@ -38,7 +41,7 @@ dat %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!duplicated(Rep)) %>%
   dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = log10p)) + 
+  ggplot(mapping = aes(x = as.numeric(POS.x)/1000000, y = log10p)) + 
   theme_bw() + 
   geom_point() + 
   facet_grid(.~CHROM, drop = TRUE) + 
@@ -48,8 +51,10 @@ dat %>%
 
 
 dat %>%
-  dplyr::filter(Detected == TRUE) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = log10p, colour = Simulated)) + 
+  dplyr::filter(Detected == TRUE,
+                log10p != Inf) %>%
+  dplyr::arrange(Simulated) %>%
+  ggplot(mapping = aes(x = as.numeric(POS)/1000000, y = log10p, colour = Simulated)) + 
   theme_bw() + 
   geom_point() + 
   scale_colour_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Simulated QTL?") + 
@@ -78,7 +83,7 @@ precision <- dat %>%
 resolution <- dat %>%
   dplyr::filter(Detected == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, AF1, Frequency, interval_size, algorithm, h2, var.exp) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp) %>%
   dplyr::group_by(h2, algorithm) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
                    mean(var.exp), median(var.exp), sd(var.exp))
