@@ -3,7 +3,6 @@ title: "GWA Mapping: Low-Replication Example"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
-    toc: false
 editor_options:
   chunk_output_type: console
 ---
