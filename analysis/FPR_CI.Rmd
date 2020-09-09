@@ -204,7 +204,7 @@ summarized %>%
        y = "Mean QTL Interval Width (Mb)")
 ```
 
-```{r echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r IntraChromosomal FPsecho=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
   dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
@@ -246,6 +246,40 @@ closest.FP.df %>%
   theme(legend.position = "top") + 
   ggtitle("Intra-Chromosomal False-Positives")
 
+for.binning <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
+  dplyr::filter(as.numeric(dist.from.QTL) > 0) %>%
+  dplyr::group_by(CHROM, algorithm) %>%
+  tidyr::nest()
+fp.bins <- function(data, chrom, algo){
+  data %>%
+  dplyr::mutate(pos.bin = cut(as.numeric(peakPOS), 10000)) %>%
+  dplyr::group_by(pos.bin) %>%
+  dplyr::summarise(mean(log10p), median(POS), n()) %>%
+  dplyr::mutate(CHROM = chrom,
+                algorithm = algo)
+}
+fp.bins.list <- purrr::pmap(.l = list(for.binning$data, 
+                                    for.binning$CHROM,
+                                    for.binning$algorithm), .f = fp.bins)
+fp.bins.df <- do.call(rbind, fp.bins.list) %>%
+  dplyr::mutate(`mean(log10p)` = dplyr::if_else(`mean(log10p)` == "Inf", 
+                                                true = 0, 
+                                                false = `mean(log10p)`),
+                top.end = `n()` > quantile(`n()`, seq(0,1, by = 0.05))[20])
+ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = top.end)) +
+  theme_minimal() +
+  geom_point(shape = 21) +
+  facet_grid(algorithm~CHROM, scales = "free", space = "free") +
+  labs(x = "Genomic position (Mb)",
+       y = "Number of False-Positives per Bin") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Yellowstone[c(3,6)], name = "Top 5%") + 
+  theme(legend.position = "top") + 
+  ggtitle("Intra-Chromosomal False-Positives")
+
+```
+
+```{r ExtraChromosomal FPs echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
 closest.FP.df %>%
   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
   dplyr::arrange(h2) %>%
@@ -271,12 +305,43 @@ closest.FP.df %>%
   scale_fill_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
   theme(legend.position = "top") + 
   ggtitle("Extra-Chromosomal False-Positives")
+
+for.binning <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
+  dplyr::group_by(CHROM, algorithm) %>%
+  tidyr::nest()
+fp.bins <- function(data, chrom, algo){
+  data %>%
+  dplyr::mutate(pos.bin = cut(as.numeric(peakPOS), 10000)) %>%
+  dplyr::group_by(pos.bin) %>%
+  dplyr::summarise(mean(log10p), median(POS), n()) %>%
+  dplyr::mutate(CHROM = chrom,
+                algorithm = algo)
+}
+fp.bins.list <- purrr::pmap(.l = list(for.binning$data, 
+                                    for.binning$CHROM,
+                                    for.binning$algorithm), .f = fp.bins)
+fp.bins.df <- do.call(rbind, fp.bins.list) %>%
+  dplyr::mutate(`mean(log10p)` = dplyr::if_else(`mean(log10p)` == "Inf", 
+                                                true = 0, 
+                                                false = `mean(log10p)`),
+                top.end = `n()` > quantile(`n()`, seq(0,1, by = 0.05))[20])
+
+ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = top.end)) +
+  theme_minimal() +
+  geom_point(shape = 21) +
+  facet_grid(algorithm~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = "Number of False-Positives per Bin") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(1,4)], name = "Top 5%") + 
+  theme(legend.position = "top") + 
+  ggtitle("Extra-Chromosomal False-Positives")
 ```
 
 ```{r eval=FALSE, include=FALSE}
-# rep = as.character(sample(seq(1:50), size = 1))
-rep = "16"
-herit = "0.9"
+rep = as.character(sample(seq(1:50), size = 1))
+rep = "1"
+herit = "0.6"
 algo = "LMM-EXACT-INBRED"
 closest.FP.df %>%
   dplyr::filter(Rep == rep,
