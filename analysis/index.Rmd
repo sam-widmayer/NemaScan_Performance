@@ -12,3 +12,4 @@ editor_options:
 
 1. A [small overview](powerprecisionh2.html) of mapping performance with a single QTL with a defined effect.
 2. A [more nuanced example](gamma.effects.html) where there are a small collection of QTLs with effects that are distributed more closely to what we expect to see in nature.
+3. How useful are [confidence intervals](FPR_CI.html) in this GWA pipeline? A common question with complex answers.
