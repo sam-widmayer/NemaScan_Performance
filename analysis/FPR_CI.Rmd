@@ -18,7 +18,7 @@ require(RColorBrewer)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData")
 dat <- simuation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -100,6 +100,12 @@ summarized <- power %>%
 reps <- dat %>%
   dplyr::group_by(h2, Rep, algorithm) %>%
   tidyr::nest()
+
+# data = reps$data[[214]]
+# rep = reps$Rep[[214]]
+# h2 = reps$h2[[214]]
+# algorithm = reps$algorithm[[214]]
+
 closest.FP.calc <- function(data, rep, h2, algorithm){
 # ALL REPS SEPARATED:
   chrom.split <- data %>%
@@ -115,7 +121,7 @@ closest.FP.calc <- function(data, rep, h2, algorithm){
     n.true.qtl <- length(rep.CHROM$Simulated[which(rep.CHROM$Simulated == TRUE)])
     # more than 1 simulated QTL on the chromosome
     if(n.true.qtl > 1){
-      simulated.QTL.POS  <- rep.CHROM %>%
+      simulated.QTL.POS <- rep.CHROM %>%
       dplyr::filter(Simulated == TRUE) %>%
       dplyr::select(POS) %>%
       as.list()
@@ -167,11 +173,35 @@ closest.FP.table <- closest.FP.df %>%
   dplyr::summarise(mean(as.numeric(dist.from.QTL))) %>%
   tidyr::pivot_wider(names_from = h2, values_from = `mean(as.numeric(dist.from.QTL))`)
 
+closest.ExtraCHROM.FP.table <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
+  dplyr::group_by(h2, algorithm) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(names_from = h2, values_from = `n()`)
+
 print(knitr::kable(closest.FP.table, 
                    format = "pandoc",
                    caption = "Average Distance Between False-Positives and the Nearest Simulated QTL",
                    digits = 3))
 
+print(knitr::kable(closest.ExtraCHROM.FP.table, 
+                   format = "pandoc",
+                   caption = "Number of Extra-Chromosomal False-Positives",
+                   digits = 3))
+
+```
+
+```{r interval width plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = algorithm)) +
+  theme_minimal() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
+  labs(title = "QTL Resolution v. Heritability",
+       x = expression(italic(h^2)),
+       y = "Mean QTL Interval Width (Mb)")
 ```
 
 ```{r echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
@@ -181,7 +211,7 @@ closest.FP.df %>%
   dplyr::arrange(h2) %>%
   ggplot(., mapping = aes(x = as.numeric(dist.from.QTL)/1000000, stat(count), fill = h2)) + 
   theme_minimal() + 
-  geom_density(alpha = 0.4) + 
+  geom_density( position = "stack") + 
   facet_grid(algorithm~.) + 
   scale_fill_brewer(palette = "Greens", name = "Trait Heritability") + 
   theme(legend.position = "top") + 
@@ -241,5 +271,17 @@ closest.FP.df %>%
   scale_fill_manual(values = nationalparkcolors::park_palettes$Hawaii[c(5,1,2)], name = "Mapping Algorithm") + 
   theme(legend.position = "top") + 
   ggtitle("Extra-Chromosomal False-Positives")
+```
+
+```{r eval=FALSE, include=FALSE}
+# rep = as.character(sample(seq(1:50), size = 1))
+rep = "16"
+herit = "0.9"
+algo = "LMM-EXACT-INBRED"
+closest.FP.df %>%
+  dplyr::filter(Rep == rep,
+                h2 == herit,
+                algorithm == algo) %>%
+  dplyr::select(QTL, Rep, dist.from.QTL, Simulated, Detected, Frequency, CHROM, peakPOS)
 ```
 

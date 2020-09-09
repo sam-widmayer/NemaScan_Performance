@@ -17,7 +17,7 @@ require(nationalparkcolors)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData")
 dat <- simuation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -89,7 +89,7 @@ precision <- dat %>%
 resolution <- dat %>%
   dplyr::filter(Detected == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, AF1, Frequency, interval_size, algorithm, h2, var.exp) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp) %>%
   dplyr::group_by(h2, algorithm) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
                    mean(var.exp), median(var.exp), sd(var.exp))
