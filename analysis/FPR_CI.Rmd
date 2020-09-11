@@ -494,13 +494,6 @@ intrachrom.FPs %>%
   dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
                                    yes = "Divergent", 
                                    no = "Non-Divergent")) %>%
-  dplyr::filter(divergent == "Divergent")
-
-
-intrachrom.FPs %>%
-  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
-                                   yes = "Divergent", 
-                                   no = "Non-Divergent")) %>%
   ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = divergent)) +
   theme_minimal() +
   geom_point(alpha = 0.4, shape = 21) +
