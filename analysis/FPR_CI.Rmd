@@ -271,7 +271,7 @@ fp.bins.df <- do.call(rbind, fp.bins.list) %>%
 ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = top.end)) +
   theme_minimal() +
   geom_point(shape = 21) +
-  facet_grid(algorithm~CHROM, scales = "free", space = "free") +
+  facet_grid(algorithm~CHROM) +
   labs(x = "Genomic position (Mb)",
        y = "Number of False-Positives per Bin") +
   scale_fill_manual(values = nationalparkcolors::park_palettes$Yellowstone[c(3,6)], name = "Top 5%") + 
@@ -377,6 +377,24 @@ simulated %>%
   theme(legend.position = "top") + 
   ggtitle("Are Simulated QTL in Divergent Regions?")
 
+simulated.QTL.by.divergence <- simulated %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.simulated$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected")) %>%
+  dplyr::filter(!duplicated(paste(QTL))) %>%
+  dplyr::group_by(divergent, detected) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(values_from = `n()`, names_from = divergent) %>%
+  as.data.frame()
+rownames(simulated.QTL.by.divergence) <- simulated.QTL.by.divergence$detected
+simulated.QTL.by.divergence.xsq <- simulated.QTL.by.divergence %>%
+  dplyr::select(-detected)
+print("Are Divergent Regions Disproportionately Represented in Simulated QTL?")
+simulated.QTL.by.divergence.xsq
+chisq.test(x = simulated.QTL.by.divergence.xsq,simulate.p.value = T)
 
 test <- simulated %>%
   dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.simulated$QTL, 
@@ -391,7 +409,6 @@ test %>%
   group_by(detected, divergent, algorithm) %>%
   dplyr::summarise(mean(Frequency)) %>%
   tidyr::pivot_wider(values_from = `mean(Frequency)`, names_from = c(detected, divergent))
-
 # MAF
 print("Divergent QTLs Only")
 test %>%
@@ -409,8 +426,6 @@ print("Detected QTLs Only")
 test %>%
   dplyr::filter(detected == "Detected") %>%
   kruskal.test(Frequency ~ divergent, data = .) # Are detected QTL MAFs different between divergent and non-divergent regions?
-
-
 test %>%
   dplyr::filter(!duplicated(paste(QTL,algorithm))) %>%
   ggplot(., mapping = aes(x = detected, y = Frequency, fill = divergent)) +
@@ -422,6 +437,7 @@ test %>%
   scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
   theme(legend.position = "top") + 
   ggtitle("How Frequent Are Divergent QTL?")
+
 
 # Effects
 test %>%
@@ -444,7 +460,6 @@ print("Detected QTLs Only")
 test %>%
   dplyr::filter(detected == "Detected") %>%
   kruskal.test(abs(Effect) ~ divergent, data = .) # Are detected QTL effects different between divergent and non-divergent regions?
-
 test %>%
   dplyr::filter(!duplicated(paste(QTL,algorithm))) %>%
   ggplot(., mapping = aes(x = detected, y = abs(Effect), fill = divergent)) +
@@ -472,6 +487,16 @@ divergent.FPs <- IRanges::findOverlapPairs(intrachrom.FPs.gr, div.regions.gr) %>
   dplyr::select(first.QTL,first.X.seqnames, first.X.start, first.X.end, 
                 second.start, second.end) %>%
   `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
+
+
+print("Intra-Chromosomal False-Positives")
+intrachrom.FPs %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent")) %>%
+  dplyr::filter(divergent == "Divergent")
+
+
 intrachrom.FPs %>%
   dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
                                    yes = "Divergent", 
