@@ -337,7 +337,7 @@ $(document).ready(function () {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2020-09-09
+<strong>Last updated:</strong> 2020-09-11
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -452,16 +452,16 @@ relative
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree85df9fcaddcf2c2f7b10af5a632cbf6b55edb0f0targetblank85df9fca"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/85df9fcaddcf2c2f7b10af5a632cbf6b55edb0f0" target="_blank">85df9fc</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree236801e9784b24746e0de100b65360681a9c6b39targetblank236801ea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/236801e9784b24746e0de100b65360681a9c6b39" target="_blank">236801e</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree85df9fcaddcf2c2f7b10af5a632cbf6b55edb0f0targetblank85df9fca" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree236801e9784b24746e0de100b65360681a9c6b39targetblank236801ea" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/85df9fcaddcf2c2f7b10af5a632cbf6b55edb0f0" target="_blank">85df9fc</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/236801e9784b24746e0de100b65360681a9c6b39" target="_blank">236801e</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -472,11 +472,18 @@ Ignored files:
     Ignored:    data/.DS_Store
 
 Untracked files:
+    Untracked:  code/process_ibd.R
     Untracked:  code/startup.R
+    Untracked:  code/susie.R
+    Untracked:  data/CelegansStrainData.tsv
+    Untracked:  data/Common_divergent_regions_clustered.tsv
+    Untracked:  data/Intermediate_divergent_regions_clustered.tsv
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_REDO.20200909.RData
+    Untracked:  data/Rare_divergent_regions_clustered.tsv
+    Untracked:  data/sweep_summary.tsv
 
 </code></pre>
 <p>
@@ -515,6 +522,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/236801e9784b24746e0de100b65360681a9c6b39/analysis/FPR_CI.Rmd" target="_blank">236801e</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-11
+</td>
+<td>
+divergent region integration
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/sam-widmayer/NemaScan_Performance/a1188e30b4caeee136c561d137d0c0c3e37df435/docs/FPR_CI.html" target="_blank">a1188e3</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -811,8 +852,8 @@ initiate
 </div>
 </div>
 </div>
-<div id="analysis-date-september-09-2020" class="section level3">
-<h3>Analysis date: September 09, 2020</h3>
+<div id="analysis-date-september-11-2020" class="section level3">
+<h3>Analysis date: September 11, 2020</h3>
 </div>
 <div id="nemascan-simulation-performance-was-assessed-with-the-following-experimental-parameters" class="section level3">
 <h3>NemaScan simulation performance was assessed with the following experimental parameters:</h3>
@@ -1247,6 +1288,62 @@ Sam Widmayer
 </table>
 </div>
 </div>
+<p><img src="figure/FPR_CI.Rmd/divergent%20region%20assessment-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>`summarise()` regrouping output by &#39;detected&#39;, &#39;divergent&#39; (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 3 x 5
+  algorithm  Detected_Diverg… `Detected_Non-D… `Not Detected_D… `Not Detected_N…
+  &lt;chr&gt;                 &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+1 EMMAx                 0.196            0.171            0.191            0.166
+2 LMM-EXACT             0.209            0.180            0.188            0.163
+3 LMM-EXACT…            0.212            0.177            0.185            0.164</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  Frequency by detected
+Kruskal-Wallis chi-squared = 7.8419, df = 1, p-value = 0.005105</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  Frequency by detected
+Kruskal-Wallis chi-squared = 3.3053, df = 1, p-value = 0.06906</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  Frequency by divergent
+Kruskal-Wallis chi-squared = 40.676, df = 1, p-value = 1.797e-10</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  Frequency by divergent
+Kruskal-Wallis chi-squared = 25.791, df = 1, p-value = 3.805e-07</code></pre>
+<pre><code>`summarise()` regrouping output by &#39;detected&#39;, &#39;divergent&#39; (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 3 x 5
+  algorithm  Detected_Diverg… `Detected_Non-D… `Not Detected_D… `Not Detected_N…
+  &lt;chr&gt;                 &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+1 EMMAx                  1.43             1.55            0.239            0.286
+2 LMM-EXACT              1.58             1.67            0.260            0.338
+3 LMM-EXACT…             1.41             1.54            0.230            0.314</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  abs(Effect) by detected
+Kruskal-Wallis chi-squared = 917.69, df = 1, p-value &lt; 2.2e-16</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  abs(Effect) by detected
+Kruskal-Wallis chi-squared = 1702, df = 1, p-value &lt; 2.2e-16</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  abs(Effect) by divergent
+Kruskal-Wallis chi-squared = 0.51104, df = 1, p-value = 0.4747</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
+
+data:  abs(Effect) by divergent
+Kruskal-Wallis chi-squared = 1.3382, df = 1, p-value = 0.2474</code></pre>
+<p><img src="figure/FPR_CI.Rmd/divergent%20region%20assessment-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/FPR_CI.Rmd/divergent%20region%20assessment-3.png" width="672" style="display: block; margin: auto;" /><img src="figure/FPR_CI.Rmd/divergent%20region%20assessment-4.png" width="672" style="display: block; margin: auto;" /><img src="figure/FPR_CI.Rmd/divergent%20region%20assessment-5.png" width="672" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1267,63 +1364,68 @@ locale:
 [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 attached base packages:
-[1] stats     graphics  grDevices utils     datasets  methods   base     
+[1] parallel  stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
 
 other attached packages:
- [1] RColorBrewer_1.1-2       nationalparkcolors_0.1.0 yardstick_0.0.6         
- [4] workflows_0.1.1          tune_0.1.0               rsample_0.0.6           
- [7] recipes_0.1.12           parsnip_0.1.0            infer_0.5.1             
-[10] dials_0.0.6              scales_1.1.1             broom_0.5.5             
-[13] tidymodels_0.1.0         forcats_0.5.0            stringr_1.4.0           
-[16] dplyr_1.0.2              purrr_0.3.4              readr_1.3.1             
-[19] tidyr_1.1.2              tibble_3.0.3             ggplot2_3.3.2           
-[22] tidyverse_1.3.0          workflowr_1.6.2         
+ [1] GenomicRanges_1.38.0     GenomeInfoDb_1.22.1      IRanges_2.20.2          
+ [4] S4Vectors_0.24.4         BiocGenerics_0.32.0      RColorBrewer_1.1-2      
+ [7] nationalparkcolors_0.1.0 yardstick_0.0.6          workflows_0.1.1         
+[10] tune_0.1.0               rsample_0.0.6            recipes_0.1.12          
+[13] parsnip_0.1.0            infer_0.5.1              dials_0.0.6             
+[16] scales_1.1.1             broom_0.5.5              tidymodels_0.1.0        
+[19] forcats_0.5.0            stringr_1.4.0            dplyr_1.0.2             
+[22] purrr_0.3.4              readr_1.3.1              tidyr_1.1.2             
+[25] tibble_3.0.3             ggplot2_3.3.2            tidyverse_1.3.0         
+[28] workflowr_1.6.2         
 
 loaded via a namespace (and not attached):
-  [1] readxl_1.3.1         backports_1.1.9      tidytext_0.2.4      
-  [4] plyr_1.8.6           igraph_1.2.5         splines_3.6.3       
-  [7] crosstalk_1.1.0.1    listenv_0.8.0        SnowballC_0.7.0     
- [10] rstantools_2.0.0     inline_0.3.15        digest_0.6.25       
- [13] foreach_1.5.0        htmltools_0.5.0      rsconnect_0.8.16    
- [16] fansi_0.4.1          magrittr_1.5         globals_0.12.5      
- [19] modelr_0.1.6         gower_0.2.1          matrixStats_0.56.0  
- [22] xts_0.12-0           prettyunits_1.1.1    colorspace_1.4-1    
- [25] rvest_0.3.5          haven_2.2.0          xfun_0.13           
- [28] callr_3.4.3          crayon_1.3.4         jsonlite_1.7.0      
- [31] lme4_1.1-23          iterators_1.0.12     survival_3.1-8      
- [34] zoo_1.8-7            glue_1.4.2           gtable_0.3.0        
- [37] ipred_0.9-9          pkgbuild_1.1.0       rstan_2.19.3        
- [40] DBI_1.1.0            miniUI_0.1.1.1       Rcpp_1.0.5          
- [43] xtable_1.8-4         GPfit_1.0-8          stats4_3.6.3        
- [46] lava_1.6.7           StanHeaders_2.21.0-1 prodlim_2019.11.13  
- [49] DT_0.13              htmlwidgets_1.5.1    httr_1.4.2          
- [52] threejs_0.3.3        ellipsis_0.3.1       farver_2.0.3        
- [55] pkgconfig_2.0.3      loo_2.2.0            nnet_7.3-12         
- [58] dbplyr_1.4.2         labeling_0.3         tidyselect_1.1.0    
- [61] rlang_0.4.7          DiceDesign_1.8-1     reshape2_1.4.4      
- [64] later_1.1.0.1        munsell_0.5.0        cellranger_1.1.0    
- [67] tools_3.6.3          cli_2.0.2            generics_0.0.2      
- [70] ggridges_0.5.2       evaluate_0.14        fastmap_1.0.1       
- [73] yaml_2.2.1           processx_3.4.3       knitr_1.28          
- [76] fs_1.4.1             future_1.17.0        nlme_3.1-144        
- [79] whisker_0.4          mime_0.9             rstanarm_2.19.3     
- [82] xml2_1.3.1           tokenizers_0.2.1     compiler_3.6.3      
- [85] bayesplot_1.7.1      shinythemes_1.1.2    rstudioapi_0.11     
- [88] reprex_0.3.0         tidyposterior_0.0.2  lhs_1.0.2           
- [91] statmod_1.4.34       stringi_1.4.6        highr_0.8           
- [94] ps_1.3.4             lattice_0.20-38      Matrix_1.2-18       
- [97] nloptr_1.2.2.1       markdown_1.1         shinyjs_1.1         
-[100] vctrs_0.3.4          pillar_1.4.6         lifecycle_0.2.0     
-[103] furrr_0.1.0          httpuv_1.5.2         R6_2.4.1            
-[106] promises_1.1.1       gridExtra_2.3        janeaustenr_0.1.5   
-[109] codetools_0.2-16     boot_1.3-24          colourpicker_1.0    
-[112] MASS_7.3-51.5        gtools_3.8.2         assertthat_0.2.1    
-[115] rprojroot_1.3-2      withr_2.2.0          shinystan_2.5.0     
-[118] parallel_3.6.3       hms_0.5.3            grid_3.6.3          
-[121] rpart_4.1-15         timeDate_3043.102    minqa_1.2.4         
-[124] class_7.3-15         rmarkdown_2.1        git2r_0.26.1        
-[127] pROC_1.16.2          tidypredict_0.4.5    shiny_1.4.0.2       
-[130] lubridate_1.7.8      base64enc_0.1-3      dygraphs_1.1.1.6    </code></pre>
+  [1] readxl_1.3.1           backports_1.1.9        tidytext_0.2.4        
+  [4] plyr_1.8.6             igraph_1.2.5           splines_3.6.3         
+  [7] crosstalk_1.1.0.1      listenv_0.8.0          SnowballC_0.7.0       
+ [10] rstantools_2.0.0       inline_0.3.15          digest_0.6.25         
+ [13] foreach_1.5.0          htmltools_0.5.0        rsconnect_0.8.16      
+ [16] fansi_0.4.1            magrittr_1.5           globals_0.12.5        
+ [19] modelr_0.1.6           gower_0.2.1            matrixStats_0.56.0    
+ [22] xts_0.12-0             prettyunits_1.1.1      colorspace_1.4-1      
+ [25] rvest_0.3.5            haven_2.2.0            xfun_0.13             
+ [28] RCurl_1.98-1.1         callr_3.4.3            crayon_1.3.4          
+ [31] jsonlite_1.7.0         lme4_1.1-23            iterators_1.0.12      
+ [34] survival_3.1-8         zoo_1.8-7              glue_1.4.2            
+ [37] gtable_0.3.0           zlibbioc_1.32.0        XVector_0.26.0        
+ [40] ipred_0.9-9            pkgbuild_1.1.0         rstan_2.19.3          
+ [43] DBI_1.1.0              miniUI_0.1.1.1         Rcpp_1.0.5            
+ [46] xtable_1.8-4           GPfit_1.0-8            lava_1.6.7            
+ [49] StanHeaders_2.21.0-1   prodlim_2019.11.13     DT_0.13               
+ [52] htmlwidgets_1.5.1      httr_1.4.2             threejs_0.3.3         
+ [55] ellipsis_0.3.1         farver_2.0.3           pkgconfig_2.0.3       
+ [58] loo_2.2.0              nnet_7.3-12            dbplyr_1.4.2          
+ [61] utf8_1.1.4             labeling_0.3           tidyselect_1.1.0      
+ [64] rlang_0.4.7            DiceDesign_1.8-1       reshape2_1.4.4        
+ [67] later_1.1.0.1          munsell_0.5.0          cellranger_1.1.0      
+ [70] tools_3.6.3            cli_2.0.2              generics_0.0.2        
+ [73] ggridges_0.5.2         evaluate_0.14          fastmap_1.0.1         
+ [76] yaml_2.2.1             processx_3.4.3         knitr_1.28            
+ [79] fs_1.4.1               future_1.17.0          nlme_3.1-144          
+ [82] whisker_0.4            mime_0.9               rstanarm_2.19.3       
+ [85] xml2_1.3.1             tokenizers_0.2.1       compiler_3.6.3        
+ [88] bayesplot_1.7.1        shinythemes_1.1.2      rstudioapi_0.11       
+ [91] reprex_0.3.0           tidyposterior_0.0.2    lhs_1.0.2             
+ [94] statmod_1.4.34         stringi_1.4.6          highr_0.8             
+ [97] ps_1.3.4               lattice_0.20-38        Matrix_1.2-18         
+[100] nloptr_1.2.2.1         markdown_1.1           shinyjs_1.1           
+[103] vctrs_0.3.4            pillar_1.4.6           lifecycle_0.2.0       
+[106] furrr_0.1.0            data.table_1.13.0      bitops_1.0-6          
+[109] httpuv_1.5.2           R6_2.4.1               promises_1.1.1        
+[112] gridExtra_2.3          janeaustenr_0.1.5      codetools_0.2-16      
+[115] boot_1.3-24            colourpicker_1.0       MASS_7.3-51.5         
+[118] gtools_3.8.2           assertthat_0.2.1       rprojroot_1.3-2       
+[121] withr_2.2.0            shinystan_2.5.0        GenomeInfoDbData_1.2.2
+[124] hms_0.5.3              grid_3.6.3             rpart_4.1-15          
+[127] timeDate_3043.102      minqa_1.2.4            class_7.3-15          
+[130] rmarkdown_2.1          git2r_0.26.1           pROC_1.16.2           
+[133] tidypredict_0.4.5      shiny_1.4.0.2          lubridate_1.7.8       
+[136] base64enc_0.1-3        dygraphs_1.1.1.6      </code></pre>
 </div>
 </div>
 
