@@ -12,6 +12,7 @@ require(tidyverse)
 require(tidymodels)
 require(nationalparkcolors)
 require(RColorBrewer)
+require(GenomicRanges)
 ```
 
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
@@ -276,7 +277,6 @@ ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = to
   scale_fill_manual(values = nationalparkcolors::park_palettes$Yellowstone[c(3,6)], name = "Top 5%") + 
   theme(legend.position = "top") + 
   ggtitle("Intra-Chromosomal False-Positives")
-
 ```
 
 ```{r ExtraChromosomal FPs, echo=FALSE, fig.height=5.5, fig.width=8, message=FALSE, warning=FALSE, paged.print=TRUE}
@@ -336,6 +336,177 @@ ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = to
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(1,4)], name = "Top 5%") + 
   theme(legend.position = "top") + 
   ggtitle("Extra-Chromosomal False-Positives")
+```
+
+```{r divergent region assessment, echo=FALSE}
+common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
+  dplyr::mutate(chr = as.factor(chr))
+levels(common.divergent.regions$chr) <- c("1","2","3","4","5","6")
+div.regions.gr <- GenomicRanges::GRanges(seqnames = common.divergent.regions$chr, 
+                                         ranges = IRanges(start = common.divergent.regions$start, 
+                                                          end = common.divergent.regions$stop))
+# Simulated QTL
+simulated <- dat %>%
+  dplyr::filter(Simulated == TRUE)
+simulated.gr <- GenomicRanges::GRanges(seqnames = simulated$CHROM, 
+                                            ranges = IRanges(start = simulated$POS, 
+                                                             end = simulated$POS),
+                                            QTL = simulated$QTL)
+divergent.simulated <- IRanges::findOverlapPairs(simulated.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL,first.X.seqnames, first.X.start, 
+                second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+# Causal QTL v. Divergence
+simulated %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.simulated$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected")) %>%
+  dplyr::filter(!duplicated(paste(QTL))) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = Effect, fill = divergent)) +
+  theme_bw() +
+  geom_point(alpha = 0.8, shape = 21) +
+  facet_grid( algorithm ~ CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  theme(legend.position = "top") + 
+  ggtitle("Are Simulated QTL in Divergent Regions?")
+
+# MAF
+test <- simulated %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.simulated$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected"))
+
+# Stats
+test %>%
+  group_by(detected, divergent, algorithm) %>%
+  dplyr::summarise(mean(Frequency)) %>%
+  tidyr::pivot_wider(values_from = `mean(Frequency)`, names_from = c(detected, divergent))
+test %>%
+  dplyr::filter(divergent == "Divergent") %>%
+  kruskal.test(Frequency ~ detected, data = .) # Are divergent QTL MAFs different between detected and undetected QTLs?
+test %>%
+  dplyr::filter(divergent == "Non-Divergent") %>%
+  kruskal.test(Frequency ~ detected, data = .) # Are non-divergent QTL MAFs different between detected and undetected QTLs?
+test %>%
+  dplyr::filter(detected == "Not Detected") %>%
+  kruskal.test(Frequency ~ divergent, data = .) # Are undetected QTL MAFs different between divergent and non-divergent regions?
+test %>%
+  dplyr::filter(detected == "Detected") %>%
+  kruskal.test(Frequency ~ divergent, data = .) # Are detected QTL MAFs different between divergent and non-divergent regions?
+
+
+test %>%
+  group_by(detected, divergent, algorithm) %>%
+  dplyr::summarise(mean(abs(Effect))) %>%
+  tidyr::pivot_wider(values_from = `mean(abs(Effect))`, names_from = c(detected, divergent))
+test %>%
+  dplyr::filter(divergent == "Divergent") %>%
+  kruskal.test(abs(Effect) ~ detected, data = .) # Are divergent QTL effects different between detected and undetected QTLs?
+test %>%
+  dplyr::filter(divergent == "Non-Divergent") %>%
+  kruskal.test(abs(Effect) ~ detected, data = .) # Are non-divergent QTL effects different between detected and undetected QTLs?
+test %>%
+  dplyr::filter(detected == "Not Detected") %>%
+  kruskal.test(abs(Effect) ~ divergent, data = .) # Are undetected QTL effects different between divergent and non-divergent regions?
+test %>%
+  dplyr::filter(detected == "Detected") %>%
+  kruskal.test(abs(Effect) ~ divergent, data = .) # Are detected QTL effects different between divergent and non-divergent regions?
+
+
+
+
+test %>%
+  dplyr::filter(!duplicated(paste(QTL,algorithm))) %>%
+  ggplot(., mapping = aes(x = detected, y = Frequency, fill = divergent)) +
+  theme_minimal() +
+  facet_grid(algorithm ~ .) +
+  geom_violin(alpha = 0.8, draw_quantiles = seq(0,1,0.25)) + 
+  labs(x = "Genome-Wide Association Status",
+       y = "Minor Allele Frequency") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  theme(legend.position = "top") + 
+  ggtitle("How Frequent Are Divergent QTL?")
+
+# Effects
+test %>%
+  dplyr::filter(!duplicated(paste(QTL,algorithm))) %>%
+  ggplot(., mapping = aes(x = detected, y = abs(Effect), fill = divergent)) +
+  theme_minimal() +
+  geom_violin(alpha = 0.8, draw_quantiles = seq(0,1,0.25)) + 
+  facet_grid(algorithm ~ .) +
+  labs(x = "Genome-Wide Association Status",
+       y = "abs(QTL Effect)") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  theme(legend.position = "top") + 
+  ggtitle("How Impactful Are Divergent QTL?")
+
+
+
+# Intra-Chromosomal False-Positive
+intrachrom.FPs <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
+  dplyr::filter(as.numeric(dist.from.QTL) > 0)
+intrachrom.FPs.gr <- GenomicRanges::GRanges(seqnames = intrachrom.FPs$CHROM, 
+                                            ranges = IRanges(start = intrachrom.FPs$startPOS, 
+                                                             end = intrachrom.FPs$endPOS),
+                                            QTL = intrachrom.FPs$QTL)
+divergent.FPs <- IRanges::findOverlapPairs(intrachrom.FPs.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL,first.X.seqnames, first.X.start, first.X.end, 
+                second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
+intrachrom.FPs %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent")) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = divergent)) +
+  theme_minimal() +
+  geom_point(alpha = 0.4, shape = 21) +
+  facet_grid(algorithm~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  theme(legend.position = "top") + 
+  ggtitle("Intra-Chromosomal False-Positives")
+
+
+
+# Extra-Chromosomal FPs
+extrachrom.FPs <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive")
+extrachrom.FPs.gr <- GenomicRanges::GRanges(seqnames = extrachrom.FPs$CHROM, 
+                                            ranges = IRanges(start = extrachrom.FPs$startPOS, 
+                                                             end = extrachrom.FPs$endPOS),
+                                            QTL = extrachrom.FPs$QTL)
+divergent.FPs <- IRanges::findOverlapPairs(extrachrom.FPs.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL,first.X.seqnames, first.X.start, first.X.end, 
+                second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
+extrachrom.FPs %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent")) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = divergent)) +
+  theme_minimal() +
+  geom_point(alpha = 0.4, shape = 21) +
+  facet_grid(algorithm~CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  theme(legend.position = "top") + 
+  ggtitle("Extra-Chromosomal False-Positives")
+
 ```
 
 ```{r eval=FALSE, include=FALSE}
