@@ -516,7 +516,7 @@ ggplot(fp.bins.df, mapping = aes(x = `median(POS)`/1000000, y = `n()`, fill = to
 ```
 
 ### Divergent Regions
-```{r}
+```{r echo=FALSE}
 intrachrom.FPs.gr <- GenomicRanges::GRanges(seqnames = intrachrom.FPs$CHROM, 
                                             ranges = IRanges(start = intrachrom.FPs$startPOS, 
                                                              end = intrachrom.FPs$endPOS),
