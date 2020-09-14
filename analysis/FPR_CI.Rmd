@@ -38,6 +38,7 @@ dat <- simuation.metrics.df %>%
 ## Simulation Parameters
 
 NemaScan simulation performance was assessed with the following experimental parameters:
+
 * ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
 * ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
 * ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
@@ -429,22 +430,30 @@ test %>%
   group_by(detected, divergent, algorithm) %>%
   dplyr::summarise(mean(Frequency)) %>%
   tidyr::pivot_wider(values_from = `mean(Frequency)`, names_from = c(detected, divergent))
+```
 
-# MAF
+#### EMMAx
+```{r}
 print("Two-Way ANOVA:EMMAx")
 freq.aov <- test %>%
   dplyr::filter(algorithm == "EMMAx") %>%
   aov(., formula = Frequency ~ detected * divergent)
 summary(freq.aov)
 TukeyHSD(freq.aov)
+```
 
+#### LMM-EXACT
+```{r}
 print("Two-Way ANOVA:LMM-EXACT")
 freq.aov <- test %>%
   dplyr::filter(algorithm == "LMM-EXACT") %>%
   aov(., formula = Frequency ~ detected * divergent)
 summary(freq.aov)
 TukeyHSD(freq.aov)
+```
 
+#### LMM-EXACT with Inbred Kinship Matrix
+```{r}
 print("Two-Way ANOVA:LMM-EXACT-INBRED")
 freq.aov <- test %>%
   dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
