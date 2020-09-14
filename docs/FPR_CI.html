@@ -528,16 +528,16 @@ relative
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreeb647441a6e9cbb16c620ef85a3bdbe2e50eb2e4etargetblankb647441a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/b647441a6e9cbb16c620ef85a3bdbe2e50eb2e4e" target="_blank">b647441</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree9d38bd2b12ea87efcd27e3af32c7b2ff04243958targetblank9d38bd2a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/9d38bd2b12ea87efcd27e3af32c7b2ff04243958" target="_blank">9d38bd2</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreeb647441a6e9cbb16c620ef85a3bdbe2e50eb2e4etargetblankb647441a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree9d38bd2b12ea87efcd27e3af32c7b2ff04243958targetblank9d38bd2a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/b647441a6e9cbb16c620ef85a3bdbe2e50eb2e4e" target="_blank">b647441</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/9d38bd2b12ea87efcd27e3af32c7b2ff04243958" target="_blank">9d38bd2</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -598,6 +598,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/9d38bd2b12ea87efcd27e3af32c7b2ff04243958/analysis/FPR_CI.Rmd" target="_blank">9d38bd2</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-14
+</td>
+<td>
+echo=F for one block
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/sam-widmayer/NemaScan_Performance/df3d3249ae674d2fdd637a31c6a1ac4843b06255/docs/FPR_CI.html" target="_blank">df3d324</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-14
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1909,30 +1943,7 @@ Sam Widmayer
 </div>
 <div id="divergent-regions-1" class="section level3">
 <h3>Divergent Regions</h3>
-<pre class="r"><code>intrachrom.FPs.gr &lt;- GenomicRanges::GRanges(seqnames = intrachrom.FPs$CHROM, 
-                                            ranges = IRanges(start = intrachrom.FPs$startPOS, 
-                                                             end = intrachrom.FPs$endPOS),
-                                            QTL = intrachrom.FPs$QTL)
-divergent.FPs &lt;- IRanges::findOverlapPairs(intrachrom.FPs.gr, div.regions.gr) %&gt;%
-  data.frame() %&gt;%
-  dplyr::select(first.QTL,first.X.seqnames, first.X.start, first.X.end, 
-                second.start, second.end) %&gt;%
-  `colnames&lt;-`(c(&quot;QTL&quot;,&quot;CHROM&quot;,&quot;startPOS&quot;,&quot;endPOS&quot;,&quot;div.start&quot;,&quot;div.end&quot;))
-
-div.intrachrom.FPs &lt;- intrachrom.FPs %&gt;%
-  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.FPs$QTL, 
-                                   yes = &quot;Divergent&quot;, 
-                                   no = &quot;Non-Divergent&quot;))
-
-total.intrachrom.div.FP.table &lt;- div.intrachrom.FPs %&gt;%
-  dplyr::group_by(algorithm, divergent) %&gt;%
-  dplyr::summarise(n()) %&gt;%
-  tidyr::pivot_wider(names_from = divergent, values_from = `n()`)</code></pre>
 <pre><code>`summarise()` regrouping output by &#39;algorithm&#39; (override with `.groups` argument)</code></pre>
-<pre class="r"><code>print(knitr::kable(total.intrachrom.div.FP.table, 
-                   format = &quot;pandoc&quot;,
-                   caption = &quot;All Intra-Chromosomal False-Positives and their Divergent Status&quot;,
-                   digits = 3))</code></pre>
 <pre><code>
 
 Table: All Intra-Chromosomal False-Positives and their Divergent Status
@@ -1942,16 +1953,7 @@ algorithm           Divergent   Non-Divergent
 EMMAx                     353             146
 LMM-EXACT                 172              62
 LMM-EXACT-INBRED          209              88</code></pre>
-<pre class="r"><code>unique.intrachrom.div.FP.table &lt;- div.intrachrom.FPs %&gt;%
-  dplyr::filter(!duplicated(QTL)) %&gt;%
-  dplyr::group_by(divergent) %&gt;%
-  dplyr::summarise(n()) %&gt;%
-  tidyr::pivot_wider(names_from = divergent, values_from = `n()`)</code></pre>
 <pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre class="r"><code>print(knitr::kable(unique.intrachrom.div.FP.table,
-                   format = &quot;pandoc&quot;,
-                   caption = &quot;Unique Intra-Chromosomal False-Positive Markers and their Divergent Status&quot;,
-                   digits = 3))</code></pre>
 <pre><code>
 
 Table: Unique Intra-Chromosomal False-Positive Markers and their Divergent Status
@@ -1959,16 +1961,6 @@ Table: Unique Intra-Chromosomal False-Positive Markers and their Divergent Statu
  Divergent   Non-Divergent
 ----------  --------------
        368             153</code></pre>
-<pre class="r"><code>div.intrachrom.FPs %&gt;%
-  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = log10p, fill = divergent)) +
-  theme_minimal() +
-  geom_point(alpha = 0.4, shape = 21) +
-  facet_grid(algorithm~CHROM) +
-  labs(x = &quot;Genomic position (Mb)&quot;,
-       y = expression(-log[10](italic(p)))) +
-  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = &quot;Divergent Region?&quot;) + 
-  theme(legend.position = &quot;top&quot;) + 
-  ggtitle(&quot;Intra-Chromosomal False-Positives&quot;)</code></pre>
 <p><img src="figure/FPR_CI.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-12-1">
@@ -2007,28 +1999,8 @@ Sam Widmayer
 </table>
 </div>
 </div>
-<pre class="r"><code># Chi-Sq
-intra.chrom.xsq &lt;- dat %&gt;%
-  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.all$QTL, 
-                                   yes = &quot;Divergent&quot;, 
-                                   no = &quot;Non-Divergent&quot;),
-                detected = ifelse(test = Detected == TRUE, 
-                                  yes = &quot;Detected&quot;,
-                                  no = &quot;Not Detected&quot;)) %&gt;%
-  dplyr::filter(!duplicated(QTL)) %&gt;%
-  dplyr::group_by(divergent) %&gt;%
-  dplyr::summarise(n()) %&gt;%
-  tidyr::pivot_wider(names_from = divergent, values_from = `n()`) %&gt;%
-  dplyr::full_join(unique.intrachrom.div.FP.table) %&gt;%
-  as.data.frame()</code></pre>
 <pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
 <pre><code>Joining, by = c(&quot;Divergent&quot;, &quot;Non-Divergent&quot;)</code></pre>
-<pre class="r"><code>intra.chrom.xsq.table &lt;- intra.chrom.xsq %&gt;%
-  `rownames&lt;-`(c(&quot;All Unique QTL&quot;,&quot;Intra-Chromosomal False-Positives&quot;))
-print(knitr::kable(intra.chrom.xsq.table,
-                   format = &quot;pandoc&quot;,
-                   caption = &quot;Comparing Intrachromosomal False-Positive Divergence with All QTL (Mapped or Unmapped)&quot;,
-                   digits = 3))</code></pre>
 <pre><code>
 
 Table: Comparing Intrachromosomal False-Positive Divergence with All QTL (Mapped or Unmapped)
@@ -2037,7 +2009,6 @@ Table: Comparing Intrachromosomal False-Positive Divergence with All QTL (Mapped
 ----------------------------------  ----------  --------------
 All Unique QTL                             243             808
 Intra-Chromosomal False-Positives          368             153</code></pre>
-<pre class="r"><code>chisq.test(intra.chrom.xsq, simulate.p.value = TRUE)</code></pre>
 <pre><code>
     Pearson&#39;s Chi-squared test with simulated p-value (based on 2000
     replicates)
@@ -2183,6 +2154,43 @@ Table: Unique Intra-Chromosomal False-Positive Markers and their Divergent Statu
 ----------  --------------
        180             103</code></pre>
 <p><img src="figure/FPR_CI.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-1">
+Past versions of unnamed-chunk-13-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/df3d3249ae674d2fdd637a31c6a1ac4843b06255/docs/figure/FPR_CI.Rmd/unnamed-chunk-13-1.png" target="_blank">df3d324</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-14
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
 <pre><code>Joining, by = c(&quot;Divergent&quot;, &quot;Non-Divergent&quot;)</code></pre>
 <pre><code>
