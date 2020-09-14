@@ -35,7 +35,8 @@ dat <- simuation.metrics.df %>%
                 POS = as.numeric(POS))
 ```
 
-# Simulation Parameters
+## Simulation Parameters
+
 NemaScan simulation performance was assessed with the following experimental parameters:
 * ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
 * ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
