@@ -1,0 +1,404 @@
+---
+title: "Fine Mapping with susieR"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+require(RColorBrewer)
+require(GenomicRanges)
+require(cowplot)
+```
+
+Analysis date: `r format(Sys.time(), '%B %d, %Y')`
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+setwd("~/Documents/projects/NemaScan_Performance/")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData")
+dat <- simuation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                POS = as.numeric(POS))
+```
+
+## Simulation Parameters
+
+NemaScan simulation performance was assessed with the following experimental parameters:
+
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
+* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
+* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
+* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+
+## Simulated QTL Locations
+```{r simulated QTL locations, echo=FALSE}
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
+  theme_bw() + 
+  geom_point() + 
+  facet_grid(.~CHROM, drop = TRUE) + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = Simulated)) +
+  theme_minimal() + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+```
+
+```{r susie.import, echo=FALSE}
+all.susie <- data.table::fread("data/all_susie_hits.tsv") %>%
+  tidyr::unite("sim", c(nqtl,repl,herit,maf,eff,strains), remove = F) %>%
+  dplyr::rename(CHROM = chrom,
+                nQTL = nqtl,
+                Rep = repl,
+                h2 = herit,
+                MAF = maf,
+                effect_range = eff,
+                strain_set = strains) %>%
+  dplyr::mutate(nQTL = as.numeric(nQTL)) %>%
+  tidyr::unite("QTL", c(CHROM,POS), sep = ":",remove = F)
+
+BF.susie <- data.table::fread("data/all_susie_BF_hits.tsv") %>%
+  tidyr::unite("sim", c(nqtl,repl,herit,maf,eff,strains), remove = F) %>%
+  dplyr::rename(CHROM = chrom,
+                nQTL = nqtl,
+                Rep = repl,
+                h2 = herit,
+                MAF = maf,
+                effect_range = eff,
+                strain_set = strains) %>%
+  dplyr::mutate(nQTL = as.numeric(nQTL)) %>%
+  tidyr::unite("QTL", c(CHROM,POS), sep = ":",remove = F)
+
+dat.all.susie <- dat %>%
+  dplyr::filter(sim %in% all.susie$sim, 
+                algorithm == "LMM-EXACT-INBRED") %>%
+  dplyr::mutate(CHROM = as.numeric(CHROM), 
+                nQTL = as.numeric(nQTL),
+                Rep = as.numeric(Rep),
+                MAF = as.numeric(MAF))
+
+dat.BF.susie <- dat %>%
+  dplyr::filter(sim %in% BF.susie$sim, 
+                algorithm == "LMM-EXACT-INBRED") %>%
+  dplyr::mutate(CHROM = as.numeric(CHROM), 
+                nQTL = as.numeric(nQTL),
+                Rep = as.numeric(Rep),
+                MAF = as.numeric(MAF))
+```
+
+```{r power precision resolution, echo=FALSE}
+power <- dat.all.susie %>%
+  dplyr::group_by(h2) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision <- dat.all.susie %>%
+  dplyr::group_by(h2) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+resolution <- dat.all.susie %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp) %>%
+  dplyr::group_by(h2, algorithm) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(var.exp), median(var.exp), sd(var.exp))
+
+summarized <- power %>%
+  dplyr::full_join(., precision) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::left_join(.,resolution) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(var.exp)`*100,
+                median.PVE = `median(var.exp)`*100,
+                sd.PVE = `sd(var.exp)`*100, 
+                .keep = "unused")
+```
+
+Simulations evaluated with susieR represent an incomplete set of LMM-EXACT-INBRED mappings from a previous simulation. The reduced mapping set, while incomplete, represents the true distribution of allele frequencies and effects, rendering evaluations with susieR generalizable.
+
+```{r MAFS, echo=FALSE}
+whole.AFS <- dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = Simulated)) +
+  theme_minimal(base_size = 8) + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)",
+       title = "MAF Distribution")
+
+all.susie.AFS <- dat.all.susie %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = Simulated)) +
+  theme_minimal(base_size = 8) + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)",
+       title = "MAF Distribution: susie Hits")
+
+BF.susie.AFS <- dat.BF.susie %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = Simulated)) +
+  theme_minimal(base_size = 8) + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)",
+       title = "MAFs: susie Hits Above BF Threshold")
+
+cowplot::plot_grid(whole.AFS, all.susie.AFS, BF.susie.AFS, 
+                   align = "h", nrow = 1)
+```
+
+```{r Effects, echo=FALSE}
+whole.effects <- dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = abs(Effect), fill = Simulated)) +
+  theme_minimal(base_size = 8) + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  labs(x = "abs(QTL Effect)",
+       y = "Frequency of Simulated QTL (Smoothed Density)",
+       title = "QTL Effects")
+
+all.susie.effects <- dat.all.susie %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = abs(Effect), fill = Simulated)) +
+  theme_minimal(base_size = 8) + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  labs(x = "abs(QTL Effect)",
+       y = "Frequency of Simulated QTL (Smoothed Density)",
+       title = "QTL Effects: susie Mappings")
+
+BF.susie.effects <- dat.BF.susie %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = abs(Effect), fill = Simulated)) +
+  theme_minimal(base_size = 8) + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  labs(x = "abs(QTL Effect)",
+       y = "Frequency of Simulated QTL (Smoothed Density)",
+       title = "QTL Effects: susie Mappings | Hits BF Threshold")
+
+cowplot::plot_grid(whole.effects, all.susie.effects, BF.susie.effects, 
+                   align = "h", nrow = 1)
+```
+
+```{r echo=FALSE, paged.print=TRUE}
+all.susie.nested <- all.susie %>%
+  dplyr::arrange(sim) %>%
+  dplyr::group_by(sim) %>%
+  tidyr::nest()
+
+mapping.nested <- dat.all.susie %>%
+  dplyr::arrange(sim) %>%
+  dplyr::group_by(sim) %>%
+  tidyr::nest()
+
+# Sanity Check
+# summary(all.susie.nested$sim == mapping.nested$sim)
+
+susie.validation <- function(susies, mappings){
+  
+   susie.gr <- GenomicRanges::GRanges(seqnames = susies$CHROM,
+                                   ranges = IRanges::IRanges(start = susies$start_susie, 
+                                                             end = susies$end_susie),
+                                   susie.SNP = susies$QTL)
+   
+   
+   mappings <- transform(mappings, startPOS = ifelse(is.na(startPOS), POS, startPOS))
+   mappings <- transform(mappings, peakPOS = ifelse(is.na(peakPOS), POS, peakPOS))
+   mappings <- transform(mappings, endPOS = ifelse(is.na(endPOS), POS, endPOS))
+   
+   GWA <- mappings
+  
+   mapping.effects.gr <- GenomicRanges::GRanges(seqnames = GWA$CHROM,
+                                          ranges = IRanges::IRanges(start = as.numeric(GWA$startPOS), 
+                                                                    end = as.numeric(GWA$endPOS)),
+                                          QTL = GWA$QTL,
+                                          GWA.Simulated = GWA$Simulated,
+                                          GWA.Detected = GWA$Detected)
+   
+   GWA.overlap <- IRanges::findOverlapPairs(mapping.effects.gr, susie.gr) %>%
+     as.data.frame() %>%
+     dplyr::select(first.QTL, first.X.start, first.X.end, second.X.start, second.X.end, second.susie.SNP, first.GWA.Simulated, first.GWA.Detected) %>%
+     `colnames<-`(c("QTL","startPOS","endPOS","start_susie","end_susie","susie.SNP","Simulated","Detected")) 
+   
+   all.hits  <- GWA.overlap[!duplicated(GWA.overlap$QTL),] %>%
+     dplyr::select(-susie.SNP) %>%
+     dplyr::full_join(., mappings, by = c("QTL", "startPOS", "endPOS", "Simulated", "Detected")) %>%
+     dplyr::rename(GWA.causal.variant = causal.variant,
+                   GWA.Detected = Detected) %>%
+     dplyr::mutate(susie.Detected = (QTL %in% GWA.overlap$QTL),
+                   susie.causal.variant = (QTL %in% GWA.overlap$susie.SNP))
+   all.hits$GWA.causal.variant <- tidyr::replace_na(all.hits$GWA.causal.variant, replace = FALSE)
+   
+   all.hits$Simulated <- factor(all.hits$Simulated, levels = c("TRUE","FALSE"))
+   all.hits$GWA.Detected <- factor(all.hits$GWA.Detected, levels = c("TRUE","FALSE"))
+   all.hits$GWA.causal.variant <- factor(all.hits$GWA.causal.variant, levels = c("TRUE","FALSE"))
+   all.hits$susie.Detected <- factor(all.hits$susie.Detected, levels = c("TRUE","FALSE"))
+   all.hits$susie.causal.variant <- factor(all.hits$susie.causal.variant, levels = c("TRUE","FALSE"))
+   return(all.hits)
+}
+susie.performance <- purrr::map2(all.susie.nested$data, mapping.nested$data, susie.validation) %>%
+  Reduce(rbind,.)
+```
+
+```{r power, echo=FALSE}
+GWA.Power <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::sens(truth = Simulated, estimate = GWA.Detected) %>%
+  dplyr::mutate(.metric = "GWA Detection Power") %>%
+  dplyr::select(-.estimator) 
+GWA.causal.variant.Power <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::sens(truth = Simulated, estimate = GWA.causal.variant) %>%
+  dplyr::mutate(.metric = "GWA Power: Causal Variant") %>%
+  dplyr::select(-.estimator) 
+susie.Power <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::sens(truth = Simulated, estimate = susie.Detected) %>%
+  dplyr::mutate(.metric = "susie Detection Power") %>%
+  dplyr::select(-.estimator) 
+susie.causal.variant.Power <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::sens(truth = Simulated, estimate = susie.causal.variant) %>%
+  dplyr::mutate(.metric = "susie Power: Causal Variant") %>%
+  dplyr::select(-.estimator)
+
+power.comp <- GWA.Power %>%
+  dplyr::full_join(.,GWA.causal.variant.Power)%>% 
+  dplyr::full_join(.,susie.Power)%>% 
+  dplyr::full_join(.,susie.causal.variant.Power)
+
+power.table <- power.comp %>%
+  tidyr::pivot_wider(names_from = h2, values_from = .estimate)
+print(knitr::kable(power.table, format = "markdown", digits = 3))
+
+ggplot(power.comp, mapping = aes(x = h2, y = .estimate, colour = .metric)) +
+  theme_minimal() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = .metric)) +
+  scale_colour_manual(values = c("#78c0e0","#56766F","#449dd1","#86CB92"), name = "") +
+  ylim(c(0,1)) + 
+  labs(title = "Power v. Heritability",
+       x = expression(italic(h^2)))
+```
+
+```{r Precision, echo=FALSE}
+GWA.Precision <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::precision(truth = Simulated, estimate = GWA.Detected) %>%
+  dplyr::mutate(.metric = "GWA Detection Precision") %>%
+  dplyr::select(-.estimator) 
+GWA.causal.variant.Precision <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::precision(truth = Simulated, estimate = GWA.causal.variant) %>%
+  dplyr::mutate(.metric = "GWA Precision: Causal Variant") %>%
+  dplyr::select(-.estimator) 
+susie.Precision <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::precision(truth = Simulated, estimate = susie.Detected) %>%
+  dplyr::mutate(.metric = "susie Detection Precision") %>%
+  dplyr::select(-.estimator)
+susie.causal.variant.Precision <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  yardstick::precision(truth = Simulated, estimate = susie.causal.variant) %>%
+  dplyr::mutate(.metric = "susie Precision: Causal Variant") %>%
+  dplyr::select(-.estimator) 
+
+precision.comp <- GWA.Precision %>% 
+  dplyr::full_join(.,GWA.causal.variant.Precision)%>% 
+  dplyr::full_join(.,susie.Precision)%>% 
+  dplyr::full_join(.,susie.causal.variant.Precision)
+
+Precision.table <- precision.comp %>%
+  tidyr::pivot_wider(names_from = h2, values_from = .estimate)
+print(knitr::kable(Precision.table, format = "markdown", digits = 3))
+
+ggplot(precision.comp, mapping = aes(x = h2, y = .estimate, colour = .metric)) +
+  theme_minimal() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = .metric)) +
+  scale_colour_manual(values = c("#78c0e0","#56766F","#449dd1","#86CB92"), name = "") +
+  ylim(c(0,1)) + 
+  labs(title = "Power v. Heritability",
+       x = expression(italic(h^2)))
+```
+
+```{r eval=FALSE, include=FALSE}
+Detection.to.causal <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  dplyr::filter(Simulated == TRUE,
+                GWA.Detected == TRUE) %>%
+  yardstick::sens(truth = GWA.Detected, estimate = GWA.causal.variant) %>%
+  dplyr::mutate(.metric = "Causal Variant Tagged in GWA") %>%
+  dplyr::select(-.estimator) %>%
+  tidyr::pivot_wider(names_from = h2, values_from = .estimate)
+
+GWA.to.susie <- susie.performance %>%
+  dplyr::group_by(h2) %>%
+  dplyr::filter(Simulated == TRUE,
+                GWA.Detected == TRUE) %>%
+  yardstick::sens(truth = GWA.Detected, estimate = susie.Detected) %>%
+  dplyr::mutate(.metric = "GWA Interval Retained by susie") %>%
+  dplyr::select(-.estimator) %>%
+  tidyr::pivot_wider(names_from = h2, values_from = .estimate)
+```
+
+
+
+
+
