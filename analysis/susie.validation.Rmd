@@ -147,6 +147,7 @@ summarized <- power %>%
                 .keep = "unused")
 ```
 
+## susie Performance Evaluation
 Simulations evaluated with susieR represent an incomplete set of LMM-EXACT-INBRED mappings from a previous simulation. The reduced mapping set, while incomplete, represents the true distribution of allele frequencies and effects, rendering evaluations with susieR generalizable.
 
 ```{r MAFS, echo=FALSE}
