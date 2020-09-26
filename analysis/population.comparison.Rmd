@@ -1,0 +1,157 @@
+---
+title: "Population Differences in Mapping Performance"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+setwd("~/Documents/projects/NemaScan_Performance/")
+load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData") # EMMA, hard filtered variants
+dat <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp),
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(algorithm != "No Successful Mappings")
+```
+
+## Simulation Parameters
+
+NemaScan simulation performance was assessed with the following experimental parameters:
+
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
+* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
+* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
+* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+
+## Simulated QTL Locations
+```{r}
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
+  theme_bw() + 
+  geom_point() + 
+  facet_grid(strain_set~CHROM, drop = TRUE) + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = strain_set)) +
+  theme_minimal() + 
+  geom_density(position = "stack") + 
+  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(., mapping = aes(x = abs(Effect), fill = strain_set)) +
+  theme_minimal() + 
+  geom_density(position = "stack") + 
+  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  labs(x = "abs(QTL Effect)",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+```
+## Power and Precision
+```{r include=FALSE}
+power <- dat %>%
+  dplyr::group_by(h2, algorithm, strain_set) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision <- dat %>%
+  dplyr::group_by(h2, algorithm, strain_set) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+resolution <- dat %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp, strain_set) %>%
+  dplyr::group_by(h2, algorithm, strain_set) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(var.exp), median(var.exp), sd(var.exp))
+
+summarized <- power %>%
+  dplyr::full_join(., precision) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::left_join(.,resolution) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(var.exp)`*100,
+                median.PVE = `median(var.exp)`*100,
+                sd.PVE = `sd(var.exp)`*100, 
+                .keep = "unused")
+```
+
+```{r power precision plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Power, colour = strain_set)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = strain_set)) +
+  facet_grid(.~algorithm) +
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  ylim(c(0,1)) + 
+  labs(title = "Power v. Heritability",
+       x = expression(italic(h^2)))
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Precision, colour = strain_set)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = strain_set)) +
+  facet_grid(.~algorithm) +
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  ylim(c(0,1)) + 
+  labs(title = "Precision v. Heritability",
+       x = expression(italic(h^2)))
+```
+## QTL Resolution
+```{r interval width plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = strain_set)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  facet_grid(.~algorithm) +
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  labs(title = "QTL Resolution v. Heritability",
+       x = expression(italic(h^2)),
+       y = "Mean QTL Interval Width (Mb)")
+```
