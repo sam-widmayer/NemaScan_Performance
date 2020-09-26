@@ -23,8 +23,9 @@ Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData")
-dat <- simuation.metrics.df %>%
+# load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData") # EMMAx, imputed variants
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData") # EMMA, hard filtered variants
+dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
@@ -32,7 +33,18 @@ dat <- simuation.metrics.df %>%
                   into = c("CHROM","POS"), 
                   sep = ":", remove = F) %>%
   dplyr::mutate(h2 = as.factor(h2),
-                POS = as.numeric(POS))
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp),
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(algorithm != "No Successful Mappings")
 ```
 
 ## Simulation Parameters
@@ -70,6 +82,18 @@ dat %>%
   theme(legend.position = "none") + 
   xlim(c(0.05,0.5)) + 
   labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(., mapping = aes(x = abs(Effect), fill = Simulated)) +
+  theme_minimal() + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
 
@@ -153,7 +177,7 @@ simulated %>%
   ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = Effect, fill = divergent)) +
   theme_bw() +
   geom_point(alpha = 0.8, shape = 21) +
-  facet_grid( algorithm ~ CHROM) +
+  facet_grid( ~ CHROM) +
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect") +
   scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
@@ -180,6 +204,7 @@ print("Are Divergent Regions Disproportionately Represented in Simulated QTL?")
 simulated.QTL.by.divergence.xsq
 chisq.test(x = simulated.QTL.by.divergence.xsq,simulate.p.value = T)
 ```
+
 ### Statistical Testing - Minor Allele Frequencies
 To facilitate initial analyses, differences among groups were calculated using Two-Way ANOVA. 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -197,11 +222,11 @@ test %>%
   dplyr::summarise(mean(Frequency)) %>%
   tidyr::pivot_wider(values_from = `mean(Frequency)`, names_from = c(detected, divergent))
 ```
-#### EMMAx
+#### EMMA
 ```{r echo=FALSE}
-print("Two-Way ANOVA:EMMAx")
+print("Two-Way ANOVA:EMMA")
 freq.aov <- test %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "EMMA") %>%
   aov(., formula = Frequency ~ detected * divergent)
 summary(freq.aov)
 TukeyHSD(freq.aov)
@@ -242,29 +267,29 @@ test %>%
 
 ### Statistical Testing - QTL Effects
 Since these are known to be Gamma distributed, differences among groups were calculated using Kruskal-Wallis Rank Sum Tests, with conditioning on mapping algorithms and 1) divergence classification or 2) detection in the pipeline.
-#### EMMAx
+#### EMMA
 ```{r echo=FALSE}
 # Effects
-print("EMMAx KRUSKALL WALLIS")
+print("EMMA KRUSKALL WALLIS")
 print("Divergent QTLs Only")
 test %>%
   dplyr::filter(divergent == "Divergent") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "EMMA") %>%
   kruskal.test(Frequency ~ detected, data = .) # Are divergent QTL MAFs different between detected and undetected QTLs?
 print("Non-Divergent QTLs Only")
 test %>%
   dplyr::filter(divergent == "Non-Divergent") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "EMMA") %>%
   kruskal.test(Frequency ~ detected, data = .) # Are non-divergent QTL MAFs different between detected and undetected QTLs?
 print("Undetected QTLs Only")
 test %>%
   dplyr::filter(detected == "Not Detected") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "EMMA") %>%
   kruskal.test(Frequency ~ divergent, data = .) # Are undetected QTL MAFs different between divergent and non-divergent regions?
 print("Detected QTLs Only")
 test %>%
   dplyr::filter(detected == "Detected") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "EMMA") %>%
   kruskal.test(Frequency ~ divergent, data = .) # Are detected QTL MAFs different between divergent and non-divergent regions?
 ```
 
@@ -299,22 +324,22 @@ print("LMM-EXACT-INBRED KRUSKALL WALLIS")
 print("Divergent QTLs Only")
 test %>%
   dplyr::filter(divergent == "Divergent") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
   kruskal.test(Frequency ~ detected, data = .) # Are divergent QTL MAFs different between detected and undetected QTLs?
 print("Non-Divergent QTLs Only")
 test %>%
   dplyr::filter(divergent == "Non-Divergent") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
   kruskal.test(Frequency ~ detected, data = .) # Are non-divergent QTL MAFs different between detected and undetected QTLs?
 print("Undetected QTLs Only")
 test %>%
   dplyr::filter(detected == "Not Detected") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
   kruskal.test(Frequency ~ divergent, data = .) # Are undetected QTL MAFs different between divergent and non-divergent regions?
 print("Detected QTLs Only")
 test %>%
   dplyr::filter(detected == "Detected") %>%
-  dplyr::filter(algorithm == "EMMAx") %>%
+  dplyr::filter(algorithm == "LMM-EXACT-INBRED") %>%
   kruskal.test(Frequency ~ divergent, data = .) # Are detected QTL MAFs different between divergent and non-divergent regions?
 ```
 
