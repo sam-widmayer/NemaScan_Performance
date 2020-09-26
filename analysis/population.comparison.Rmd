@@ -97,6 +97,8 @@ dat %>%
 
 ## Power and Precision
 
+Strains colloquially referred to as "swept" harbor long-range regions of the genome with depleted variation compared to other areas of the genome, indicative of putative selective sweeps. The reference strain N2, and many other strains from Europe and North America tend to fall into this strain category. Conversely, "unswept" strains tend to lack these regions, more closely resemble diverged isolates such as CB4856, and are commonly observed in the Pacific region and Hawaii. Subsampled strain sets (1-5) are comprised of random samples of both swept and unswept strains totaling to 200, but in proportions equal to the swept/unswept strain composition observed in the complete set of strains available on CeNDR (403). We asked whether mapping populations exhibiting different population genomic features exhibited different performance when applied to GWA mapping.
+
 ```{r include=FALSE}
 power <- dat %>%
   dplyr::group_by(h2, algorithm, strain_set) %>%
