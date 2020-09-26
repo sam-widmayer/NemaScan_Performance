@@ -171,3 +171,68 @@ summarized %>%
        x = expression(italic(h^2)),
        y = "Mean QTL Interval Width (Mb)")
 ```
+
+## Divergent Regions
+```{r divergent region assessment, include=FALSE}
+common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
+  dplyr::mutate(chr = as.factor(chr))
+levels(common.divergent.regions$chr) <- c("1","2","3","4","5","6")
+div.regions.gr <- GenomicRanges::GRanges(seqnames = common.divergent.regions$chr, 
+                                         ranges = IRanges(start = common.divergent.regions$start, 
+                                                          end = common.divergent.regions$stop))
+
+
+all.gr <- GenomicRanges::GRanges(seqnames = dat$CHROM, 
+                                 ranges = IRanges(start = dat$POS, 
+                                                  end = dat$POS),
+                                 QTL = dat$QTL)
+divergent.all <- IRanges::findOverlapPairs(all.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+
+
+
+# Simulated QTL
+simulated <- dat %>%
+  dplyr::filter(Simulated == TRUE)
+simulated.gr <- GenomicRanges::GRanges(seqnames = simulated$CHROM, 
+                                            ranges = IRanges(start = simulated$POS, 
+                                                             end = simulated$POS),
+                                            QTL = simulated$QTL)
+divergent.simulated <- IRanges::findOverlapPairs(simulated.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL,first.X.seqnames, first.X.start, 
+                second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+simulated %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.simulated$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected")) %>%
+  # dplyr::filter(!duplicated(paste(QTL))) %>%
+  ggplot(., mapping = aes(x = as.numeric(POS)/1000000, y = Effect, fill = divergent)) +
+  theme_bw() +
+  geom_point(alpha = 0.8, shape = 21) +
+  facet_grid(strain_set ~ CHROM) +
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  theme(legend.position = "top") + 
+  ggtitle("Are Simulated QTL in Divergent Regions?")
+
+simulated %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.simulated$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected")) %>%
+  dplyr::group_by(strain_set, divergent, detected) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(names_from = detected, values_from = `n()`)
+```
