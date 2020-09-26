@@ -16,8 +16,9 @@ require(nationalparkcolors)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData")
-dat <- simuation.metrics.df %>%
+# load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData") # EMMAx, imputed variants
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData") # EMMA, hard filtered variants
+dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
@@ -25,7 +26,18 @@ dat <- simuation.metrics.df %>%
                   into = c("CHROM","POS"), 
                   sep = ":", remove = F) %>%
   dplyr::mutate(h2 = as.factor(h2),
-                POS = as.numeric(POS))
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp),
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(algorithm != "No Successful Mappings")
 ```
 
 ### NemaScan simulation performance was assessed with the following experimental parameters:
@@ -39,6 +51,7 @@ dat <- simuation.metrics.df %>%
 ```{r simulated QTL locations, echo=FALSE}
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
   dplyr::filter(!is.na(CHROM)) %>%
   ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
   theme_bw() + 
@@ -52,13 +65,25 @@ dat %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(algorithm == "LMM-EXACT") %>%
   dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = Frequency, fill = Simulated)) +
+  ggplot(., mapping = aes(x = Frequency, fill = Simulated)) +
   theme_minimal() + 
   geom_density() + 
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
   theme(legend.position = "none") + 
   xlim(c(0.05,0.5)) + 
   labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(., mapping = aes(x = abs(Effect), fill = Simulated)) +
+  theme_minimal() + 
+  geom_density() + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[1]) + 
+  theme(legend.position = "none") + 
+  labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
 dat %>%
