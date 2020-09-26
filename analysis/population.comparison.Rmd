@@ -57,6 +57,7 @@ NemaScan simulation performance was assessed with the following experimental par
 * ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
 
 ## Simulated QTL Locations
+
 ```{r echo=FALSE}
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
@@ -93,7 +94,9 @@ dat %>%
   labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
+
 ## Power and Precision
+
 ```{r include=FALSE}
 power <- dat %>%
   dplyr::group_by(h2, algorithm, strain_set) %>%
@@ -150,7 +153,9 @@ summarized %>%
   labs(title = "Precision v. Heritability",
        x = expression(italic(h^2)))
 ```
+
 ## QTL Resolution
+
 ```{r interval width plots, echo=FALSE}
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
