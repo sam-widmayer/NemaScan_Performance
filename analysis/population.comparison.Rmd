@@ -10,6 +10,15 @@ output:
 editor_options:
   chunk_output_type: console
 ---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+require(RColorBrewer)
+require(GenomicRanges)
+```
+
+## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
@@ -48,7 +57,7 @@ NemaScan simulation performance was assessed with the following experimental par
 * ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
 
 ## Simulated QTL Locations
-```{r}
+```{r echo=FALSE}
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(algorithm == "LMM-EXACT") %>%
