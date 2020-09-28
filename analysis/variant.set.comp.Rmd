@@ -24,6 +24,8 @@ Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
+
+# Load Hard-Filtered Simulations
 load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData") # EMMA, hard filtered variants
 hard.filtered <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
@@ -43,10 +45,20 @@ hard.filtered <- simulation.metrics.df %>%
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size)) %>%
-  dplyr::filter(algorithm != "No Successful Mappings") %>%
+                interval_size = as.numeric(interval_size),
+                startPOS = if_else(condition = is.na(startPOS), 
+                                   true = POS, 
+                                   false = startPOS),
+                peakPOS = if_else(condition = is.na(peakPOS), 
+                                   true = POS, 
+                                   false = peakPOS),
+                endPOS = if_else(condition = is.na(endPOS), 
+                                   true = POS, 
+                                   false = endPOS)) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
   dplyr::mutate(variant.set = "hard-filtered")
 
+# Load Imputed Simulations
 load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData") # EMMAx, imputed variants
 imputed <- simuation.metrics.df %>%
   tidyr::separate(col = sim,
@@ -66,14 +78,67 @@ imputed <- simuation.metrics.df %>%
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size)) %>%
-  dplyr::filter(algorithm != "No Successful Mappings") %>%
+                interval_size = as.numeric(interval_size), 
+                startPOS = if_else(condition = is.na(startPOS), 
+                                   true = POS, 
+                                   false = startPOS),
+                peakPOS = if_else(condition = is.na(peakPOS), 
+                                   true = POS, 
+                                   false = peakPOS),
+                endPOS = if_else(condition = is.na(endPOS), 
+                                   true = POS, 
+                                   false = endPOS)) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
   dplyr::mutate(variant.set = "imputed")
 
-dat <- hard.filtered %>%
-  dplyr::full_join(., imputed) %>%
-  dplyr::filter(algorithm == "LMM-EXACT") %>%
-  droplevels()
+# Divergent Regions
+common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
+  dplyr::mutate(chr = as.factor(chr))
+levels(common.divergent.regions$chr) <- c("1","2","3","4","5","6")
+div.regions.gr <- GenomicRanges::GRanges(seqnames = common.divergent.regions$chr, 
+                                         ranges = IRanges(start = common.divergent.regions$start, 
+                                                          end = common.divergent.regions$stop))
+
+# Hard-Filtered Overlap
+hard.filtered.gr <- GenomicRanges::GRanges(seqnames = hard.filtered$CHROM,
+                                 ranges = IRanges(start = hard.filtered$startPOS, 
+                                                  end = hard.filtered$endPOS),
+                                 QTL = hard.filtered$QTL)
+divergent.hard.filtered <- IRanges::findOverlapPairs(hard.filtered.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+
+# Imputed Overlap
+imputed.gr <- GenomicRanges::GRanges(seqnames = imputed$CHROM,
+                                 ranges = IRanges(start = imputed$startPOS, 
+                                                  end = imputed$endPOS),
+                                 QTL = imputed$QTL)
+divergent.imputed <- IRanges::findOverlapPairs(imputed.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+# Simulated QTL
+imputed.div.df <- imputed %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.imputed$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected"))
+
+hard.filtered.div.df <- hard.filtered %>%
+  dplyr::mutate(divergent = ifelse(test = QTL %in% divergent.hard.filtered$QTL, 
+                                   yes = "Divergent", 
+                                   no = "Non-Divergent"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected"))
+
+dat <- imputed.div.df %>%
+  dplyr::full_join(hard.filtered.div.df)
 ```
 
 
@@ -220,7 +285,7 @@ summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   ggplot(., mapping = aes(x = Power, y = mean.interval.Mb, fill = variant.set)) +
   theme_bw() +
-    geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
                         ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7, shape = 21, size = 1) +
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
   labs(title = "QTL Resolution v. Mapping Power",
@@ -252,4 +317,132 @@ summarized %>%
   labs(title = "Precision v. QTL Variance Explained",
        y = "Variance Explained by QTL (%)",
        x = "Mapping Precision")
+```
+
+## Divergent Regions
+```{r divergent region breakdown, echo=FALSE}
+dat %>%
+  dplyr::group_by(variant.set, divergent, detected) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(values_from = `n()`, names_from = divergent) %>%
+  as.data.frame()
+
+reps <- dat %>%
+  dplyr::group_by(h2, Rep, variant.set) %>%
+  tidyr::nest()
+
+# data = reps$data[[214]]
+# rep = reps$Rep[[214]]
+# h2 = reps$h2[[214]]
+# variant.set = reps$variant.set[[214]]
+
+closest.FP.calc <- function(data, rep, h2, variant.set){
+# ALL REPS SEPARATED:
+  chrom.split <- data %>%
+    dplyr::group_by(CHROM) %>%
+    tidyr::nest()
+
+# CHROMOSOME LOOP START
+  closest.FP <- list()
+  for(i in 1:length(chrom.split$data)){
+  rep.CHROM <- chrom.split$data[[i]]
+# SEARCH FOR CLOSEST SIMULATED QTL
+# CALCULATE ABS(DISTANCE) FROM IT
+  if(TRUE %in% rep.CHROM$Simulated){
+    n.true.qtl <- length(rep.CHROM$Simulated[which(rep.CHROM$Simulated == TRUE)])
+    # more than 1 simulated QTL on the chromosome
+    if(n.true.qtl > 1){
+      simulated.QTL.POS <- rep.CHROM %>%
+      dplyr::filter(Simulated == TRUE) %>%
+      dplyr::select(POS) %>%
+      as.list()
+    
+      dist.from.QTL <- list()
+      for(j in 1:nrow(rep.CHROM)){
+        QTL.dists <- list()
+        for(k in 1:length(simulated.QTL.POS[[1]])){
+        QTL.dists[[k]] <- rep.CHROM[j,]$POS - simulated.QTL.POS[[1]][k]
+      }
+      dist.from.QTL[[j]] <- min(abs(unlist(QTL.dists)))
+    }
+    closest.FP[[i]] <- rep.CHROM %>%
+      dplyr::mutate(dist.from.QTL = unlist(dist.from.QTL))%>%
+      dplyr::mutate(CHROM = chrom.split$CHROM[[i]])
+    
+  } else {
+    # only 1 simulated QTL on the chromosome
+    simulated.QTL.POS  <- rep.CHROM %>%
+      dplyr::filter(Simulated == TRUE) %>% 
+      dplyr::select(POS) %>%
+      as.numeric()
+    
+    closest.FP[[i]] <- rep.CHROM %>%
+      dplyr::mutate(dist.from.QTL = abs(as.numeric(rep.CHROM$POS) - simulated.QTL.POS)) %>%
+      dplyr::mutate(CHROM = chrom.split$CHROM[[i]])
+  }
+} else {
+    closest.FP[[i]] <- rep.CHROM %>%
+      dplyr::mutate(dist.from.QTL = "Extra-Chromosomal False-Positive")%>%
+      dplyr::mutate(CHROM = chrom.split$CHROM[[i]])}
+  }
+  do.call(rbind, closest.FP) %>%
+    as.data.frame() %>%
+    dplyr::mutate(Rep = rep, 
+                  h2 = h2,
+                  variant.set = variant.set)
+}
+closest.FP.nested <- purrr::pmap(.l = list(reps$data,
+                                      reps$Rep,
+                                      reps$h2,
+                                      reps$variant.set), 
+                                 .f = closest.FP.calc)
+closest.FP.df <- do.call(rbind, closest.FP.nested)
+
+closest.intraFP.summary <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>%
+  dplyr::filter(Simulated == FALSE,
+                Detected == TRUE) %>%
+  dplyr::group_by(h2, variant.set, divergent) %>%
+  dplyr::summarise(mean(as.numeric(dist.from.QTL))/1000000,
+                   sd(dist.from.QTL)/1000000,
+                   n()) %>%
+  `colnames<-`(c("h2","variant.set","divergent","mean.QTL.dist","sd.QTL.dist","n"))
+
+ggplot(closest.intraFP.summary, mapping = aes(x = h2, y = mean.QTL.dist, fill = divergent, colour = divergent)) + 
+  theme_bw() + 
+  # geom_point(shape = 21, size = 2.5) + 
+  geom_pointrange(aes(ymin = mean.QTL.dist-sd.QTL.dist,
+                      ymax = mean.QTL.dist+sd.QTL.dist), alpha = 0.7, shape = 21, size = 1) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  geom_line(aes(group = divergent)) +
+  facet_grid(.~variant.set) + 
+  labs(x = expression(italic(h^2)),
+       y = "Distance from Nearest QTL (Mb)")
+
+ggplot(closest.intraFP.summary, mapping = aes(x = h2, y = n, fill = divergent, colour = divergent)) + 
+  theme_bw() +
+  geom_col(position = "stack", colour = "black") + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  scale_colour_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") + 
+  facet_grid(.~variant.set) + 
+  labs(x = expression(italic(h^2)),
+       y = "Number of Intra-Chromosomal False-Positives")
+
+
+
+
+closest.extraFP.summary <- closest.FP.df %>%
+  dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
+  dplyr::group_by(h2, variant.set, divergent) %>%
+  dplyr::summarise(n())
+
+ggplot(closest.extraFP.summary, mapping = aes(x = h2, y =`n()`, fill = divergent)) + 
+  theme_bw() + 
+  geom_col(position = "stack", colour = "black") + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergent Region?") +
+  # scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  facet_grid(.~variant.set) + 
+  labs(x = expression(italic(h^2)),
+       y = "Number of Extra-Chromosomal False-Positives")
 ```
