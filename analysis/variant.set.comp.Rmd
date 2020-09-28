@@ -1,0 +1,255 @@
+---
+title: "Hard-Filtered v. Imputed Variants"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+
+---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+require(RColorBrewer)
+require(GenomicRanges)
+```
+
+Analysis date: `r format(Sys.time(), '%B %d, %Y')`
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+setwd("~/Documents/projects/NemaScan_Performance/")
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData") # EMMA, hard filtered variants
+hard.filtered <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp),
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(algorithm != "No Successful Mappings") %>%
+  dplyr::mutate(variant.set = "hard-filtered")
+
+load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData") # EMMAx, imputed variants
+imputed <- simuation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp),
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(algorithm != "No Successful Mappings") %>%
+  dplyr::mutate(variant.set = "imputed")
+
+dat <- hard.filtered %>%
+  dplyr::full_join(., imputed) %>%
+  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  droplevels()
+```
+
+
+## Simulation Parameters
+
+NemaScan simulation performance was assessed with the following experimental parameters:
+
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
+* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
+* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
+* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+* ###### Algorithm: ```r levels(as.factor(dat$algorithm))```
+* ###### Variant Set: ```r levels(as.factor(dat$variant.set))```
+
+## Simulated QTL Locations
+```{r simulated QTL locations, echo=FALSE}
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
+  theme_bw() + 
+  geom_point() + 
+  facet_grid(variant.set~CHROM, drop = TRUE) + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = variant.set)) +
+  theme_bw() + 
+  geom_density(alpha = 0.6) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  theme(legend.position = "top") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(., mapping = aes(x = abs(Effect), fill = variant.set)) +
+  theme_bw() + 
+  geom_density(alpha = 0.6) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  theme(legend.position = "top") + 
+  labs(x = "abs(QTL Effect)",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+```
+
+## Performance Analysis
+
+```{r power precision resolution, echo=FALSE}
+power <- dat %>%
+  dplyr::group_by(h2, variant.set) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision <- dat %>%
+  dplyr::group_by(h2, variant.set) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+resolution <- dat %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp, variant.set) %>%
+  dplyr::group_by(h2, variant.set) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(var.exp), median(var.exp), sd(var.exp))
+
+summarized <- power %>%
+  dplyr::full_join(., precision) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::left_join(.,resolution) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(var.exp)`*100,
+                median.PVE = `median(var.exp)`*100,
+                sd.PVE = `sd(var.exp)`*100, 
+                .keep = "unused")
+```
+
+```{r ROC curve, echo=FALSE}
+# CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
+dat %>%
+  dplyr::group_by(h2, variant.set) %>%
+  yardstick::roc_curve(Simulated, log10p) %>%
+  dplyr::mutate(h2 = as.numeric(h2)) %>%
+  ggplot(., mapping = aes(x = 1-specificity, y = sensitivity, group = h2, colour = variant.set, alpha = h2)) + 
+  theme_bw() + 
+  geom_path() +
+  geom_abline(lty = 3) +
+  scale_colour_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  facet_grid(.~variant.set, scales = "free", space = "free") +
+  labs(x = "False-Positive Rate", y = "Power")
+```
+
+### Mapping Performance with Imputed Variants vs. Hard-Filtered Variants
+
+```{r power precision plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Power, fill = variant.set)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0, shape = 21, size = 3) +
+  geom_line(aes(group = variant.set)) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  ylim(c(0,1)) + 
+  labs(title = "Power v. Heritability",
+       x = expression(italic(h^2)))
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Precision, fill = variant.set)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0, shape = 21, size = 3) +
+  geom_line(aes(group = variant.set)) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  ylim(c(0,1)) + 
+  labs(title = "Precision v. Heritability",
+       x = expression(italic(h^2)))
+```
+
+### Mapping Resolution with Imputed Variants vs. Hard-Filtered Variants
+
+```{r interval width plots, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, fill = variant.set)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7, shape = 21, size = 1) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  labs(title = "QTL Resolution v. Heritability",
+       x = expression(italic(h^2)),
+       y = "Mean QTL Interval Width (Mb)")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = Power, y = mean.interval.Mb, fill = variant.set)) +
+  theme_bw() +
+    geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                        ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7, shape = 21, size = 1) +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  labs(title = "QTL Resolution v. Mapping Power",
+       x = "Power",
+       y = "QTL Interval Width (Mb)")
+```
+
+### Effect Estimation with Imputed Variants vs. Hard-Filtered Variants
+
+```{r power precision v varexplained, echo=FALSE}
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = Power, y = mean.PVE, fill = variant.set)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
+                      ymax = mean.PVE+sd.PVE), alpha = 0.7, shape = 21, size = 1) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  labs(title = "Power v. QTL Variance Explained",
+       y = "Variance Explained by QTL (%)",
+       x = "Mapping Power")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = Precision, y = mean.PVE, fill = variant.set)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
+                      ymax = mean.PVE+sd.PVE), alpha = 0.7, shape = 21, size = 1) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  labs(title = "Precision v. QTL Variance Explained",
+       y = "Variance Explained by QTL (%)",
+       x = "Mapping Precision")
+```
