@@ -187,7 +187,8 @@ NemaScan simulation performance was assessed with the following experimental par
 ## Simulated QTL Locations
 ```{r simulated QTL locations, echo=FALSE}
 dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL)) %>%
   dplyr::filter(!is.na(CHROM)) %>%
   ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
   theme_bw() + 
@@ -196,6 +197,27 @@ dat %>%
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect",
        title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL)) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = divergent.pos)) + 
+  theme_bw() + 
+  geom_point(shape = 21) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
+  facet_grid(variant.set~CHROM, drop = TRUE) + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL)) %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  dplyr::group_by(variant.set, divergent.pos) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(names_from = divergent.pos, values_from = `n()`)
 
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
