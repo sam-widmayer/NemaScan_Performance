@@ -1,0 +1,274 @@
+---
+title: "CeNDR Strain Set Power Analysis"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+require(RColorBrewer)
+require(GenomicRanges)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+setwd("~/Documents/projects/NemaScan_Performance/")
+load(file = "data/NemaScan_Performance.CeNDR2020_cendr_sets.20200929.RData") # EMMAx, hard-filtered
+dat <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp),
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(algorithm == "LMM-EXACT")
+```
+
+## Simulation Parameters
+
+NemaScan simulation performance was assessed with the following experimental parameters:
+
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
+* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
+* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
+* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+
+## Simulated QTL Locations
+
+```{r echo=FALSE}
+dat %>%
+  dplyr::filter(Simulated == TRUE, 
+                !is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.5) + 
+  facet_grid(.~CHROM, drop = TRUE) + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE, 
+                !is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = strain_set)) +
+  theme_minimal() + 
+  geom_density(position = "stack") + 
+  # scale_fill_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE, 
+                !is.na(CHROM)) %>%
+  ggplot(., mapping = aes(x = abs(Effect), fill = strain_set)) +
+  theme_minimal() + 
+  geom_density(position = "stack") + 
+  # scale_fill_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  labs(x = "abs(QTL Effect)",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+```
+
+## Power and Precision
+
+Through [CeNDR](https://www.elegansvariation.org/), we offer a ready-made sampling of strain sets. Roughly 48 strains comprise each set, and sample the range of genetic variation present in the full set (403) of CeNDR strains. This is more amenable to collaboration: to exhaustively sample 403 strains in a GWA framework is not always tenable or necessary for all analyses. On the flip side, a 100 strain GWA mapping is expected to .ack power to detect certain genetic architectures. We sought to quantify this, as well as evaluate the performance of various strain sets provided a 2 strain set cap for each mapping. We compared the performance of these panels to a random 96 strain sample drawn from proportions of swept and unswept strains present in the 403 strain set.
+
+```{r include=FALSE}
+power <- dat %>%
+  dplyr::group_by(h2, strain_set) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision <- dat %>%
+  dplyr::group_by(h2, strain_set) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+resolution <- dat %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, h2, var.exp, strain_set) %>%
+  dplyr::group_by(h2, strain_set) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(var.exp), median(var.exp), sd(var.exp))
+
+summarized <- power %>%
+  dplyr::full_join(., precision) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::left_join(.,resolution) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(var.exp)`*100,
+                median.PVE = `median(var.exp)`*100,
+                sd.PVE = `sd(var.exp)`*100, 
+                .keep = "unused") %>%
+  tidyr::separate(col = strain_set,
+                  into = c("blah1","blah2","set1","blah3","set2"), 
+                  sep = "[.]", remove = F) %>%
+  dplyr::select(-c(blah1,blah2,blah3)) %>%
+  dplyr::mutate(set.category = if_else(condition = is.na(set2), 
+                                       true = "Full Subset", 
+                                       false = "CeNDR Subset"))
+```
+
+```{r power precision plots, echo=FALSE}
+# Ranked Power
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power)) +
+  theme_bw() +
+  geom_point(size = 3) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Power: CeNDR Strain Set Combinations (h2 = 0.8)",
+       x = "Strain Set")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power)) +
+  theme_bw() +
+  geom_point(size = 3) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Power: CeNDR Strain Set Combinations (h2 = 0.5)",
+       x = "Strain Set")
+
+# Ranked Precision
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision)) +
+  theme_bw() +
+  geom_point(size = 3) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Precision: CeNDR Strain Set Combinations (h2 = 0.8)",
+       x = "Strain Set")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision)) +
+  theme_bw() +
+  geom_point(size = 3) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Precision: CeNDR Strain Set Combinations (h2 = 0.5)",
+       x = "Strain Set")
+
+# Set Heatmap
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(set.category == "CeNDR Subset") %>%
+  ggplot(., mapping = aes(x = set1, y = set2, fill = Power)) +
+  theme_classic() +
+  geom_tile() + 
+  facet_grid(.~h2, scales = "free", space = "free") + 
+  scale_fill_distiller(type = "seq", direction = 1, palette = 3) + 
+  labs(y = "Set 2",
+       x = "Set 1")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(set.category == "CeNDR Subset") %>%
+  ggplot(., mapping = aes(x = set1, y = set2, fill = Precision)) +
+  theme_classic() +
+  geom_tile() + 
+  facet_grid(.~h2, scales = "free", space = "free") + 
+  scale_fill_distiller(type = "seq", direction = 1, palette = 5) + 
+  labs(y = "Set 2",
+       x = "Set 1")
+```
+
+## QTL Resolution
+
+```{r interval width plots, echo=FALSE, fig.height=6, fig.width=7}
+# h2 = 0.5
+power.0.5 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Power)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = 3) + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Resolution: h2 = 0.5",
+       x = "Strain Set",
+       y = "Mean QTL Interval Width (Mb)")
+
+precision.0.5 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Precision)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = 5) + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Resolution: h2 = 0.5",
+       x = "Strain Set",
+       y = "Mean QTL Interval Width (Mb)")
+
+# h2 = 0.8
+power.0.8 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Power)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = 3) + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Resolution: h2 = 0.8",
+       x = "Strain Set",
+       y = "Mean QTL Interval Width (Mb)")
+
+precision.0.8 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Precision)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = 5) + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "GWA Mapping Resolution: h2 = 0.8",
+       x = "Strain Set",
+       y = "Mean QTL Interval Width (Mb)")
+
+cowplot::plot_grid(power.0.5, precision.0.5, ncol = 1)
+cowplot::plot_grid(power.0.8, precision.0.8, ncol = 1)
+```
