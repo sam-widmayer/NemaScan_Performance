@@ -413,7 +413,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2020-09-25
+<strong>Last updated:</strong> 2020-10-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -528,16 +528,16 @@ relative
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree94231522a90c9383ebd3ad325f598d7e774a57dbtargetblank9423152a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/94231522a90c9383ebd3ad325f598d7e774a57db" target="_blank">9423152</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree82e681879f7260e3019eec27d64fddf7f1525a33targetblank82e6818a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/82e681879f7260e3019eec27d64fddf7f1525a33" target="_blank">82e6818</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree94231522a90c9383ebd3ad325f598d7e774a57dbtargetblank9423152a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree82e681879f7260e3019eec27d64fddf7f1525a33targetblank82e6818a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/94231522a90c9383ebd3ad325f598d7e774a57db" target="_blank">9423152</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/82e681879f7260e3019eec27d64fddf7f1525a33" target="_blank">82e6818</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -563,6 +563,7 @@ Untracked files:
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData
     Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_REDO.20200909.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_cendr_sets.20200929.RData
     Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData
     Untracked:  data/Rare_divergent_regions_clustered.tsv
     Untracked:  data/all_susie_BF_hits.tsv
@@ -570,6 +571,10 @@ Untracked files:
     Untracked:  data/sweep_summary.tsv
     Untracked:  output/susie.validation.csv
     Untracked:  output/swept.by.chr.strain.lists.txt
+
+Unstaged changes:
+    Modified:   analysis/population.comparison.Rmd
+    Modified:   analysis/variant.set.comp.Rmd
 
 </code></pre>
 <p>
@@ -608,6 +613,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/82e681879f7260e3019eec27d64fddf7f1525a33/analysis/FPR_CI.Rmd" target="_blank">82e6818</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-10-01
+</td>
+<td>
+update with hard-filtered variants, remove divergent region analysis
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/sam-widmayer/NemaScan_Performance/2489cd55486558318d044581a4578705e62e5998/docs/FPR_CI.html" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1227,7 +1266,7 @@ initiate
 </div>
 </div>
 </div>
-<p>Analysis date: September 25, 2020</p>
+<p>Analysis date: October 01, 2020</p>
 <div id="simulation-parameters" class="section level2">
 <h2>Simulation Parameters</h2>
 <p>NemaScan simulation performance was assessed with the following experimental parameters:</p>
@@ -1265,6 +1304,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/simulated QTL locations-1.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/4e1e4446cd5aa5df1ee51063d5fb924e3b3794d7/docs/figure/FPR_CI.Rmd/simulated QTL locations-1.png" target="_blank">4e1e444</a>
@@ -1305,6 +1355,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/simulated QTL locations-2.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/4e1e4446cd5aa5df1ee51063d5fb924e3b3794d7/docs/figure/FPR_CI.Rmd/simulated QTL locations-2.png" target="_blank">4e1e444</a>
 </td>
 <td>
@@ -1319,423 +1380,186 @@ Sam Widmayer
 </div>
 </div>
 <p><img src="figure/FPR_CI.Rmd/simulated%20QTL%20locations-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-simulated-QTL-locations-3">
+Past versions of “simulated QTL locations-3.png”
+</button>
+</p>
+<div id="fig-no-spaces-simulated-QTL-locations-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/simulated QTL locations-3.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre><code>`summarise()` regrouping output by &#39;h2&#39; (override with `.groups` argument)</code></pre>
 <pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)</code></pre>
 <pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;)</code></pre>
-</div>
-<div id="divergent-regions" class="section level2">
-<h2>Divergent Regions</h2>
-<div id="simulated-qtl-locations-and-divergence" class="section level3">
-<h3>Simulated QTL Locations and Divergence</h3>
-<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-2-1">
-Past versions of unnamed-chunk-2-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-2-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/4babef1b39637520f26a55c95a65be8d779b2012/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">4babef1</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-14
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">58ed2f4</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-09
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/1b6b11af298e784dd434daac532c2d5b69f52968/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">1b6b11a</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-09
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/ae3fc600c09b498f58537cbde762f6f5f7f024a9/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">ae3fc60</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-08
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/8cd4c7fbf371ba80afe9e846706826bbc1e9ff60/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">8cd4c7f</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-08
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/eb77d6f66d73e175cc631f1ee8461f1ccfb779f6/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">eb77d6f</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-08
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/4e1e4446cd5aa5df1ee51063d5fb924e3b3794d7/docs/figure/FPR_CI.Rmd/unnamed-chunk-2-1.png" target="_blank">4e1e444</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-08
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<pre><code>[1] &quot;Are Divergent Regions Disproportionately Represented in Simulated QTL?&quot;</code></pre>
-<pre><code>             Divergent Non-Divergent
-Detected             2            58
-Not Detected        17           172</code></pre>
-<pre><code>
-    Pearson&#39;s Chi-squared test with simulated p-value (based on 2000
-    replicates)
-
-data:  simulated.QTL.by.divergence.xsq
-X-squared = 2.071, df = NA, p-value = 0.1844</code></pre>
-</div>
 <div id="statistical-testing---minor-allele-frequencies" class="section level3">
 <h3>Statistical Testing - Minor Allele Frequencies</h3>
-<p>To facilitate initial analyses, differences among groups were calculated using Two-Way ANOVA.</p>
-<pre><code># A tibble: 3 x 5
-  algorithm  Detected_Diverg… `Detected_Non-D… `Not Detected_D… `Not Detected_N…
-  &lt;chr&gt;                 &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
-1 EMMA                 0.100             0.144            0.104            0.123
-2 LMM-EXACT            0.0985            0.154            0.110            0.124
-3 LMM-EXACT…           0.101             0.150            0.111            0.124</code></pre>
-<div id="emma" class="section level4">
-<h4>EMMA</h4>
-<pre><code>[1] &quot;Two-Way ANOVA:EMMA&quot;</code></pre>
-<pre><code>                     Df Sum Sq Mean Sq F value   Pr(&gt;F)    
-detected              1  0.127 0.12686  14.250 0.000167 ***
-divergent             1  0.073 0.07301   8.201 0.004248 ** 
-detected:divergent    1  0.014 0.01386   1.557 0.212241    
-Residuals          1436 12.784 0.00890                     
----
-Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
-<pre><code>  Tukey multiple comparisons of means
-    95% family-wise confidence level
+<p>Differences among groups were calculated using Kruskal-Wallis Rank Sum Tests within each algorithm.</p>
+<pre><code>$EMMA
+# A tibble: 9 x 3
+  h2    Detected `Not Detected`
+  &lt;fct&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1 0.1      0.141          0.122
+2 0.2      0.162          0.109
+3 0.3      0.155          0.118
+4 0.4      0.142          0.125
+5 0.5      0.147          0.121
+6 0.6      0.132          0.119
+7 0.7      0.135          0.124
+8 0.8      0.135          0.132
+9 0.9      0.129          0.129
 
-Fit: aov(formula = Frequency ~ detected * divergent, data = .)
+$`LMM-EXACT`
+# A tibble: 9 x 3
+  h2    Detected `Not Detected`
+  &lt;fct&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1 0.1      0.145          0.125
+2 0.2      0.155          0.125
+3 0.3      0.161          0.121
+4 0.4      0.152          0.122
+5 0.5      0.156          0.121
+6 0.6      0.152          0.122
+7 0.7      0.155          0.120
+8 0.8      0.150          0.121
+9 0.9      0.141          0.125
 
-$detected
-                             diff         lwr          upr     p adj
-Not Detected-Detected -0.01954894 -0.02970748 -0.009390402 0.0001666
+$`LMM-EXACT-INBRED`
+# A tibble: 9 x 3
+  h2    Detected `Not Detected`
+  &lt;fct&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1 0.1      0.145          0.125
+2 0.2      0.162          0.123
+3 0.3      0.159          0.121
+4 0.4      0.146          0.123
+5 0.5      0.150          0.121
+6 0.6      0.146          0.123
+7 0.7      0.145          0.122
+8 0.8      0.141          0.124
+9 0.9      0.136          0.127</code></pre>
+<pre><code>[1] &quot;EMMA KRUSKALL WALLIS&quot;</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
 
-$divergent
-                              diff         lwr        upr     p adj
-Non-Divergent-Divergent 0.02624603 0.008253677 0.04423838 0.0042779
+data:  Frequency by detected
+Kruskal-Wallis chi-squared = 7.675, df = 1, p-value = 0.005599</code></pre>
+<pre><code>[1] &quot;LMM-EXACT KRUSKALL WALLIS&quot;</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
 
-$`detected:divergent`
-                                                          diff           lwr
-Not Detected:Divergent-Detected:Divergent          0.004216851 -0.0453731733
-Detected:Non-Divergent-Detected:Divergent          0.043755851  0.0007031189
-Not Detected:Non-Divergent-Detected:Divergent      0.022991639 -0.0194609311
-Detected:Non-Divergent-Not Detected:Divergent      0.039539000  0.0104102263
-Not Detected:Non-Divergent-Not Detected:Divergent  0.018774788 -0.0094593828
-Not Detected:Non-Divergent-Detected:Non-Divergent -0.020764213 -0.0346038527
-                                                           upr     p adj
-Not Detected:Divergent-Detected:Divergent          0.053806875 0.9963072
-Detected:Non-Divergent-Detected:Divergent          0.086808584 0.0446987
-Not Detected:Non-Divergent-Detected:Divergent      0.065444208 0.5039314
-Detected:Non-Divergent-Not Detected:Divergent      0.068667774 0.0027849
-Not Detected:Non-Divergent-Not Detected:Divergent  0.047008958 0.3185874
-Not Detected:Non-Divergent-Detected:Non-Divergent -0.006924573 0.0006864</code></pre>
-</div>
-<div id="lmm-exact" class="section level4">
-<h4>LMM-EXACT</h4>
-<pre><code>[1] &quot;Two-Way ANOVA:LMM-EXACT&quot;</code></pre>
-<pre><code>                     Df Sum Sq Mean Sq F value   Pr(&gt;F)    
-detected              1  0.362  0.3622  36.890 1.47e-09 ***
-divergent             1  0.072  0.0719   7.318  0.00688 ** 
-detected:divergent    1  0.041  0.0412   4.194  0.04069 *  
-Residuals          2216 21.756  0.0098                     
----
-Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
-<pre><code>  Tukey multiple comparisons of means
-    95% family-wise confidence level
+data:  Frequency by detected
+Kruskal-Wallis chi-squared = 12.174, df = 1, p-value = 0.0004847</code></pre>
+<pre><code>[1] &quot;LMM-EXACT-INBRED KRUSKALL WALLIS&quot;</code></pre>
+<pre><code>
+    Kruskal-Wallis rank sum test
 
-Fit: aov(formula = Frequency ~ detected * divergent, data = .)
-
-$detected
-                             diff         lwr         upr p adj
-Not Detected-Detected -0.02897741 -0.03833348 -0.01962134     0
-
-$divergent
-                              diff         lwr        upr     p adj
-Non-Divergent-Divergent 0.02147736 0.005884531 0.03707019 0.0069636
-
-$`detected:divergent`
-                                                         diff          lwr
-Not Detected:Divergent-Detected:Divergent          0.01142525 -0.039891589
-Detected:Non-Divergent-Detected:Divergent          0.05590181  0.008153699
-Not Detected:Non-Divergent-Detected:Divergent      0.02522828 -0.021745587
-Detected:Non-Divergent-Not Detected:Divergent      0.04447656  0.020249083
-Not Detected:Non-Divergent-Not Detected:Divergent  0.01380303 -0.008860429
-Not Detected:Non-Divergent-Detected:Non-Divergent -0.03067354 -0.043326461
-                                                          upr     p adj
-Not Detected:Divergent-Detected:Divergent          0.06274209 0.9403181
-Detected:Non-Divergent-Detected:Divergent          0.10364992 0.0140538
-Not Detected:Non-Divergent-Detected:Divergent      0.07220214 0.5115454
-Detected:Non-Divergent-Not Detected:Divergent      0.06870404 0.0000149
-Not Detected:Non-Divergent-Not Detected:Divergent  0.03646648 0.3984898
-Not Detected:Non-Divergent-Detected:Non-Divergent -0.01802061 0.0000000</code></pre>
-</div>
-<div id="lmm-exact-with-inbred-kinship-matrix" class="section level4">
-<h4>LMM-EXACT with Inbred Kinship Matrix</h4>
-<pre><code>[1] &quot;Two-Way ANOVA:LMM-EXACT-INBRED&quot;</code></pre>
-<pre><code>                     Df Sum Sq Mean Sq F value   Pr(&gt;F)    
-detected              1  0.255 0.25536   25.89 3.91e-07 ***
-divergent             1  0.084 0.08432    8.55  0.00349 ** 
-detected:divergent    1  0.039 0.03895    3.95  0.04701 *  
-Residuals          2216 21.853 0.00986                     
----
-Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
-<pre><code>  Tukey multiple comparisons of means
-    95% family-wise confidence level
-
-Fit: aov(formula = Frequency ~ detected * divergent, data = .)
-
-$detected
-                             diff         lwr         upr p adj
-Not Detected-Detected -0.02336393 -0.03236775 -0.01436011 4e-07
-
-$divergent
-                              diff         lwr        upr     p adj
-Non-Divergent-Divergent 0.02329639 0.007668991 0.03892379 0.0034975
-
-$`detected:divergent`
-                                                         diff          lwr
-Not Detected:Divergent-Detected:Divergent          0.01006953 -0.034410295
-Detected:Non-Divergent-Detected:Divergent          0.04932431  0.009918677
-Not Detected:Non-Divergent-Detected:Divergent      0.02373172 -0.014923032
-Detected:Non-Divergent-Not Detected:Divergent      0.03925479  0.014070744
-Not Detected:Non-Divergent-Not Detected:Divergent  0.01366219 -0.010329923
-Not Detected:Non-Divergent-Detected:Non-Divergent -0.02559260 -0.037838867
-                                                          upr     p adj
-Not Detected:Divergent-Detected:Divergent          0.05454935 0.9375114
-Detected:Non-Divergent-Detected:Divergent          0.08872995 0.0071601
-Not Detected:Non-Divergent-Detected:Divergent      0.06238647 0.3911765
-Detected:Non-Divergent-Not Detected:Divergent      0.06443883 0.0003689
-Not Detected:Non-Divergent-Not Detected:Divergent  0.03765431 0.4595765
-Not Detected:Non-Divergent-Detected:Non-Divergent -0.01334632 0.0000005</code></pre>
-</div>
+data:  Frequency by detected
+Kruskal-Wallis chi-squared = 7.8558, df = 1, p-value = 0.005066</code></pre>
 <div id="comparison-plots" class="section level4">
 <h4>Comparison Plots</h4>
-<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-7-1">
-Past versions of unnamed-chunk-7-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-7-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/c20353703c2db7702668e1df2c295a5eab522790/docs/figure/FPR_CI.Rmd/unnamed-chunk-7-1.png" target="_blank">c203537</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-14
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="statistical-testing---qtl-effects" class="section level3">
 <h3>Statistical Testing - QTL Effects</h3>
-<p>Since these are known to be Gamma distributed, differences among groups were calculated using Kruskal-Wallis Rank Sum Tests, with conditioning on mapping algorithms and 1) divergence classification or 2) detection in the pipeline. #### EMMA</p>
+<p>Differences among groups were calculated using Kruskal-Wallis Rank Sum Tests within each algorithm.</p>
+<pre><code>`summarise()` regrouping output by &#39;detected&#39;, &#39;algorithm&#39; (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 3 x 2
+# Groups:   algorithm [3]
+  algorithm        data            
+  &lt;chr&gt;            &lt;list&gt;          
+1 EMMA             &lt;tibble [9 × 3]&gt;
+2 LMM-EXACT        &lt;tibble [9 × 3]&gt;
+3 LMM-EXACT-INBRED &lt;tibble [9 × 3]&gt;</code></pre>
+<pre><code>$EMMA
+# A tibble: 9 x 3
+  h2    Detected `Not Detected`
+  &lt;fct&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1 0.1       1.11          0.470
+2 0.2       1.45          0.411
+3 0.3       1.50          0.320
+4 0.4       1.47          0.291
+5 0.5       1.49          0.274
+6 0.6       1.41          0.277
+7 0.7       1.23          0.258
+8 0.8       1.27          0.254
+9 0.9       1.21          0.211
+
+$`LMM-EXACT`
+# A tibble: 9 x 3
+  h2    Detected `Not Detected`
+  &lt;fct&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1 0.1       1.25          0.473
+2 0.2       1.52          0.422
+3 0.3       1.59          0.367
+4 0.4       1.50          0.342
+5 0.5       1.55          0.337
+6 0.6       1.44          0.349
+7 0.7       1.46          0.326
+8 0.8       1.37          0.318
+9 0.9       1.32          0.305
+
+$`LMM-EXACT-INBRED`
+# A tibble: 9 x 3
+  h2    Detected `Not Detected`
+  &lt;fct&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1 0.1       1.27          0.471
+2 0.2       1.49          0.409
+3 0.3       1.58          0.357
+4 0.4       1.43          0.322
+5 0.5       1.40          0.305
+6 0.6       1.34          0.318
+7 0.7       1.31          0.300
+8 0.8       1.25          0.297
+9 0.9       1.17          0.277</code></pre>
 <pre><code>[1] &quot;EMMA KRUSKALL WALLIS&quot;</code></pre>
-<pre><code>[1] &quot;Divergent QTLs Only&quot;</code></pre>
 <pre><code>
     Kruskal-Wallis rank sum test
 
-data:  Frequency by detected
-Kruskal-Wallis chi-squared = 0.24907, df = 1, p-value = 0.6177</code></pre>
-<pre><code>[1] &quot;Non-Divergent QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by detected
-Kruskal-Wallis chi-squared = 9.3449, df = 1, p-value = 0.002236</code></pre>
-<pre><code>[1] &quot;Undetected QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by divergent
-Kruskal-Wallis chi-squared = 3.1141, df = 1, p-value = 0.07762</code></pre>
-<pre><code>[1] &quot;Detected QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by divergent
-Kruskal-Wallis chi-squared = 0.56944, df = 1, p-value = 0.4505</code></pre>
-<div id="lmm-exact-1" class="section level4">
-<h4>LMM-EXACT</h4>
+data:  abs(Effect) by detected
+Kruskal-Wallis chi-squared = 288.71, df = 1, p-value &lt; 2.2e-16</code></pre>
 <pre><code>[1] &quot;LMM-EXACT KRUSKALL WALLIS&quot;</code></pre>
-<pre><code>[1] &quot;Divergent QTLs Only&quot;</code></pre>
 <pre><code>
     Kruskal-Wallis rank sum test
 
-data:  Frequency by detected
-Kruskal-Wallis chi-squared = 3.4791, df = 1, p-value = 0.06215</code></pre>
-<pre><code>[1] &quot;Non-Divergent QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by detected
-Kruskal-Wallis chi-squared = 14.862, df = 1, p-value = 0.0001157</code></pre>
-<pre><code>[1] &quot;Undetected QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by divergent
-Kruskal-Wallis chi-squared = 13.003, df = 1, p-value = 0.000311</code></pre>
-<pre><code>[1] &quot;Detected QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by divergent
-Kruskal-Wallis chi-squared = 0.46183, df = 1, p-value = 0.4968</code></pre>
-</div>
-<div id="lmm-exact-with-inbred-kinship-matrix-1" class="section level4">
-<h4>LMM-EXACT with Inbred Kinship Matrix</h4>
+data:  abs(Effect) by detected
+Kruskal-Wallis chi-squared = 468.95, df = 1, p-value &lt; 2.2e-16</code></pre>
 <pre><code>[1] &quot;LMM-EXACT-INBRED KRUSKALL WALLIS&quot;</code></pre>
-<pre><code>[1] &quot;Divergent QTLs Only&quot;</code></pre>
 <pre><code>
     Kruskal-Wallis rank sum test
 
-data:  Frequency by detected
-Kruskal-Wallis chi-squared = 3.5917, df = 1, p-value = 0.05807</code></pre>
-<pre><code>[1] &quot;Non-Divergent QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by detected
-Kruskal-Wallis chi-squared = 10.11, df = 1, p-value = 0.001474</code></pre>
-<pre><code>[1] &quot;Undetected QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by divergent
-Kruskal-Wallis chi-squared = 12.44, df = 1, p-value = 0.0004203</code></pre>
-<pre><code>[1] &quot;Detected QTLs Only&quot;</code></pre>
-<pre><code>
-    Kruskal-Wallis rank sum test
-
-data:  Frequency by divergent
-Kruskal-Wallis chi-squared = 0.17179, df = 1, p-value = 0.6785</code></pre>
-</div>
+data:  abs(Effect) by detected
+Kruskal-Wallis chi-squared = 519.13, df = 1, p-value &lt; 2.2e-16</code></pre>
 <div id="comparison-plots-1" class="section level4">
 <h4>Comparison Plots</h4>
-<pre><code>Warning in regularize.values(x, y, ties, missing(ties)): collapsing to unique
-&#39;x&#39; values</code></pre>
-<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-11-1">
-Past versions of unnamed-chunk-11-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-11-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/c20353703c2db7702668e1df2c295a5eab522790/docs/figure/FPR_CI.Rmd/unnamed-chunk-11-1.png" target="_blank">c203537</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-14
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 </div>
@@ -1743,13 +1567,13 @@ Sam Widmayer
 <h2>False-Positive Metrics</h2>
 <pre><code>
 
-Table: Average Distance Between False-Positives and the Nearest Simulated QTL
+Table: Average Distance (Mb) Between False-Positives and the Nearest Simulated QTL
 
-algorithm                0.1        0.2         0.3         0.4         0.5         0.6        0.7        0.8        0.9
------------------  ---------  ---------  ----------  ----------  ----------  ----------  ---------  ---------  ---------
-EMMA                679374.7   397563.1   460727.70   521473.03   420784.21   468545.73   654440.3   520567.3   554878.8
-LMM-EXACT           768061.1   272159.2    86059.63    53928.66    25241.92    82598.18   154743.5   147709.0   206737.2
-LMM-EXACT-INBRED    769263.0   218083.7   113926.20   164999.48   251528.30   250327.28   390628.9   428717.9   401274.6</code></pre>
+algorithm             0.1     0.2     0.3     0.4     0.5     0.6     0.7     0.8     0.9
+-----------------  ------  ------  ------  ------  ------  ------  ------  ------  ------
+EMMA                0.679   0.398   0.461   0.521   0.421   0.469   0.654   0.521   0.555
+LMM-EXACT           0.768   0.272   0.086   0.054   0.025   0.083   0.155   0.148   0.207
+LMM-EXACT-INBRED    0.769   0.218   0.114   0.165   0.252   0.250   0.391   0.429   0.401</code></pre>
 <pre><code>
 
 Table: Number of Extra-Chromosomal False-Positives
@@ -1785,6 +1609,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/interval width plots-1.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/1b6b11af298e784dd434daac532c2d5b69f52968/docs/figure/FPR_CI.Rmd/interval width plots-1.png" target="_blank">1b6b11a</a>
@@ -1850,6 +1685,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-1.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-1.png" target="_blank">58ed2f4</a>
 </td>
 <td>
@@ -1886,6 +1732,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-2.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-2.png" target="_blank">58ed2f4</a>
@@ -1926,6 +1783,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-3.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-3.png" target="_blank">58ed2f4</a>
 </td>
 <td>
@@ -1938,130 +1806,6 @@ Sam Widmayer
 </tbody>
 </table>
 </div>
-</div>
-<p><img src="figure/FPR_CI.Rmd/IntraChromosomal%20FPs-4.png" width="768" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-IntraChromosomal-FPs-4">
-Past versions of “IntraChromosomal FPs-4.png”
-</button>
-</p>
-<div id="fig-no-spaces-IntraChromosomal-FPs-4" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/28b309609428b91d61057fbd98cbce0719ced9d7/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-4.png" target="_blank">28b3096</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-11
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/IntraChromosomal FPs-4.png" target="_blank">58ed2f4</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-09
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div id="divergent-regions-1" class="section level3">
-<h3>Divergent Regions</h3>
-<pre><code>`summarise()` regrouping output by &#39;algorithm&#39; (override with `.groups` argument)</code></pre>
-<pre><code>
-
-Table: All Intra-Chromosomal False-Positives and their Divergent Status
-
-algorithm           Divergent   Non-Divergent
------------------  ----------  --------------
-EMMA                      112              19
-LMM-EXACT                  60              30
-LMM-EXACT-INBRED           94              40</code></pre>
-<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre><code>
-
-Table: Unique Intra-Chromosomal False-Positive Markers and their Divergent Status
-
- Divergent   Non-Divergent
-----------  --------------
-       122              49</code></pre>
-<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-12-1">
-Past versions of unnamed-chunk-12-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-12-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/c20353703c2db7702668e1df2c295a5eab522790/docs/figure/FPR_CI.Rmd/unnamed-chunk-12-1.png" target="_blank">c203537</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-14
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre><code>Joining, by = c(&quot;Divergent&quot;, &quot;Non-Divergent&quot;)</code></pre>
-<pre><code>
-
-Table: Comparing Intrachromosomal False-Positive Divergence with All QTL (Mapped or Unmapped)
-
-                                     Divergent   Non-Divergent
-----------------------------------  ----------  --------------
-All Unique QTL                              25             551
-Intra-Chromosomal False-Positives          122              49</code></pre>
-<pre><code>
-    Pearson&#39;s Chi-squared test with simulated p-value (based on 2000
-    replicates)
-
-data:  intra.chrom.xsq
-X-squared = 374.53, df = NA, p-value = 0.0004998</code></pre>
 </div>
 </div>
 <div id="extra-chromosomal-false-positives" class="section level2">
@@ -2089,6 +1833,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/ExtraChromosomal FPs-1.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/ExtraChromosomal FPs-1.png" target="_blank">58ed2f4</a>
@@ -2129,6 +1884,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/2489cd55486558318d044581a4578705e62e5998/docs/figure/FPR_CI.Rmd/ExtraChromosomal FPs-2.png" target="_blank">2489cd5</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-09-25
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/ExtraChromosomal FPs-2.png" target="_blank">58ed2f4</a>
 </td>
 <td>
@@ -2142,118 +1908,6 @@ Sam Widmayer
 </table>
 </div>
 </div>
-<p><img src="figure/FPR_CI.Rmd/ExtraChromosomal%20FPs-3.png" width="768" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-ExtraChromosomal-FPs-3">
-Past versions of “ExtraChromosomal FPs-3.png”
-</button>
-</p>
-<div id="fig-no-spaces-ExtraChromosomal-FPs-3" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/58ed2f4e89169f954f1d39c67e8ffc237922bef5/docs/figure/FPR_CI.Rmd/ExtraChromosomal FPs-3.png" target="_blank">58ed2f4</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-09
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div id="divergent-regions-2" class="section level3">
-<h3>Divergent Regions</h3>
-<pre><code>`summarise()` regrouping output by &#39;algorithm&#39; (override with `.groups` argument)</code></pre>
-<pre><code>
-
-Table: All Intra-Chromosomal False-Positives and their Divergent Status
-
-algorithm           Divergent   Non-Divergent
------------------  ----------  --------------
-EMMA                      107              20
-LMM-EXACT                  50              41
-LMM-EXACT-INBRED           99              34</code></pre>
-<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre><code>
-
-Table: Unique Intra-Chromosomal False-Positive Markers and their Divergent Status
-
- Divergent   Non-Divergent
-----------  --------------
-       113              55</code></pre>
-<p><img src="figure/FPR_CI.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-1">
-Past versions of unnamed-chunk-13-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-13-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/df3d3249ae674d2fdd637a31c6a1ac4843b06255/docs/figure/FPR_CI.Rmd/unnamed-chunk-13-1.png" target="_blank">df3d324</a>
-</td>
-<td>
-Sam Widmayer
-</td>
-<td>
-2020-09-14
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre><code>Joining, by = c(&quot;Divergent&quot;, &quot;Non-Divergent&quot;)</code></pre>
-<pre><code>
-
-Table: Comparing Extra-Chromosomal False-Positive Divergence with All QTL (Mapped or Unmapped)
-
-                                     Divergent   Non-Divergent
-----------------------------------  ----------  --------------
-All Unique QTL                              25             551
-Extra-Chromosomal False-Positives          113              55</code></pre>
-<pre><code>
-    Pearson&#39;s Chi-squared test with simulated p-value (based on 2000
-    replicates)
-
-data:  extra.chrom.xsq
-X-squared = 340.84, df = NA, p-value = 0.0004998</code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -2325,18 +1979,17 @@ loaded via a namespace (and not attached):
  [97] ps_1.3.4               lattice_0.20-38        Matrix_1.2-18         
 [100] nloptr_1.2.2.1         markdown_1.1           shinyjs_1.1           
 [103] vctrs_0.3.4            pillar_1.4.6           lifecycle_0.2.0       
-[106] furrr_0.1.0            data.table_1.13.0      bitops_1.0-6          
-[109] httpuv_1.5.2           R6_2.4.1               promises_1.1.1        
-[112] gridExtra_2.3          janeaustenr_0.1.5      codetools_0.2-16      
-[115] boot_1.3-24            colourpicker_1.0       MASS_7.3-51.5         
-[118] gtools_3.8.2           assertthat_0.2.1       rprojroot_1.3-2       
-[121] withr_2.2.0            shinystan_2.5.0        GenomeInfoDbData_1.2.2
-[124] hms_0.5.3              grid_3.6.3             rpart_4.1-15          
-[127] timeDate_3043.102      minqa_1.2.4            class_7.3-15          
-[130] rmarkdown_2.1          git2r_0.26.1           pROC_1.16.2           
-[133] tidypredict_0.4.5      shiny_1.4.0.2          lubridate_1.7.8       
-[136] base64enc_0.1-3        dygraphs_1.1.1.6      </code></pre>
-</div>
+[106] furrr_0.1.0            bitops_1.0-6           httpuv_1.5.2          
+[109] R6_2.4.1               promises_1.1.1         gridExtra_2.3         
+[112] janeaustenr_0.1.5      codetools_0.2-16       boot_1.3-24           
+[115] colourpicker_1.0       MASS_7.3-51.5          gtools_3.8.2          
+[118] assertthat_0.2.1       rprojroot_1.3-2        withr_2.2.0           
+[121] shinystan_2.5.0        GenomeInfoDbData_1.2.2 hms_0.5.3             
+[124] grid_3.6.3             rpart_4.1-15           timeDate_3043.102     
+[127] minqa_1.2.4            class_7.3-15           rmarkdown_2.1         
+[130] git2r_0.26.1           pROC_1.16.2            tidypredict_0.4.5     
+[133] shiny_1.4.0.2          lubridate_1.7.8        base64enc_0.1-3       
+[136] dygraphs_1.1.1.6      </code></pre>
 </div>
 </div>
 
