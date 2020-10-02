@@ -130,55 +130,111 @@ summarized <- power %>%
   dplyr::select(-c(blah1,blah2,blah3)) %>%
   dplyr::mutate(set.category = if_else(condition = is.na(set2), 
                                        true = "Full Subset", 
-                                       false = "CeNDR Subset"))
+                                       false = "CeNDR Subset"),
+                set2 = if_else(condition = is.na(set2),
+                               true = "96",
+                               false = set2))
 ```
 
-```{r power precision plots, echo=FALSE}
+```{r power precision plots, echo=FALSE, fig.height=6, fig.width=7}
 # Ranked Power
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  dplyr::filter(h2 == 0.8) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power)) +
-  theme_bw() +
-  geom_point(size = 3) +
-  facet_grid(.~set.category, scales = "free", space = "free") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  labs(title = "GWA Mapping Power: CeNDR Strain Set Combinations (h2 = 0.8)",
-       x = "Strain Set")
-
-summarized %>%
+# h2 = 0.5
+set.a.pal <- c(brewer.pal(n = 9, name = "Set1")[1:7],"gray")
+set.b.pal <- c(brewer.pal(n = 9, name = "Set1")[2:8],"gray")
+power.seta.fill <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   dplyr::filter(h2 == 0.5) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power)) +
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power, fill = set1)) +
   theme_bw() +
-  geom_point(size = 3) +
+  geom_point(size = 3, shape = 21) +
   facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.a.pal, name = "Set A") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  labs(title = "GWA Mapping Power: CeNDR Strain Set Combinations (h2 = 0.5)",
-       x = "Strain Set")
+  labs(x = "Strain Set")
+power.setb.fill <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power, fill = set2)) +
+  theme_bw() +
+  geom_point(size = 3, shape = 21) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.b.pal, name = "Set B") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Strain Set")
+cowplot::plot_grid(power.seta.fill, power.setb.fill)
+
+# h2 = 0.8
+power.seta.fill <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power, fill = set1)) +
+  theme_bw() +
+  geom_point(size = 3, shape = 21) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.a.pal, name = "Set A") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Strain Set")
+power.setb.fill <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = Power, fill = set2)) +
+  theme_bw() +
+  geom_point(size = 3, shape = 21) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.b.pal, name = "Set B") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Strain Set")
+cowplot::plot_grid(power.seta.fill, power.setb.fill)
+
+
 
 # Ranked Precision
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  dplyr::filter(h2 == 0.8) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision)) +
-  theme_bw() +
-  geom_point(size = 3) +
-  facet_grid(.~set.category, scales = "free", space = "free") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  labs(title = "GWA Mapping Precision: CeNDR Strain Set Combinations (h2 = 0.8)",
-       x = "Strain Set")
-
-summarized %>%
+precision.seta.fill <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   dplyr::filter(h2 == 0.5) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision)) +
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision, fill = set1)) +
   theme_bw() +
-  geom_point(size = 3) +
+  geom_point(size = 3, shape = 21) +
   facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.a.pal, name = "Set A") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  labs(title = "GWA Mapping Precision: CeNDR Strain Set Combinations (h2 = 0.5)",
-       x = "Strain Set")
+  labs(x = "Strain Set")
+precision.setb.fill <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision, fill = set2)) +
+  theme_bw() +
+  geom_point(size = 3, shape = 21) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.b.pal, name = "Set B") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Strain Set")
+cowplot::plot_grid(precision.seta.fill, precision.setb.fill)
+
+# h2 = 0.8
+precision.seta.fill <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision, fill = set1)) +
+  theme_bw() +
+  geom_point(size = 3, shape = 21) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.a.pal, name = "Set A") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Strain Set")
+precision.setb.fill <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = Precision, fill = set2)) +
+  theme_bw() +
+  geom_point(size = 3, shape = 21) +
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  scale_fill_manual(values = set.b.pal, name = "Set B") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Strain Set")
+cowplot::plot_grid(precision.seta.fill, precision.setb.fill)
+
+
 
 # Set Heatmap
 summarized %>%
@@ -188,7 +244,7 @@ summarized %>%
   theme_classic() +
   geom_tile() + 
   facet_grid(.~h2, scales = "free", space = "free") + 
-  scale_fill_distiller(type = "seq", direction = 1, palette = 3) + 
+  scale_fill_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
   labs(y = "Set 2",
        x = "Set 1")
 
@@ -199,23 +255,23 @@ summarized %>%
   theme_classic() +
   geom_tile() + 
   facet_grid(.~h2, scales = "free", space = "free") + 
-  scale_fill_distiller(type = "seq", direction = 1, palette = 5) + 
+  scale_fill_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
   labs(y = "Set 2",
        x = "Set 1")
 ```
 
 ## QTL Resolution
 
-```{r interval width plots, echo=FALSE, fig.height=6, fig.width=7}
+```{r resolution plots, echo=FALSE, fig.height=6, fig.width=7}
 # h2 = 0.5
 power.0.5 <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   dplyr::filter(h2 == 0.5) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Power)) +
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = mean.interval.Mb, colour = Power)) +
   theme_bw() +
   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  scale_colour_distiller(type = "seq", direction = 1, palette = 3) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
   facet_grid(.~set.category, scales = "free", space = "free") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
@@ -226,11 +282,11 @@ power.0.5 <- summarized %>%
 precision.0.5 <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   dplyr::filter(h2 == 0.5) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Precision)) +
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = mean.interval.Mb, colour = Precision)) +
   theme_bw() +
   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  scale_colour_distiller(type = "seq", direction = 1, palette = 5) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
   facet_grid(.~set.category, scales = "free", space = "free") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
@@ -242,11 +298,11 @@ precision.0.5 <- summarized %>%
 power.0.8 <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   dplyr::filter(h2 == 0.8) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Power)) +
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = mean.interval.Mb, colour = Power)) +
   theme_bw() +
   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  scale_colour_distiller(type = "seq", direction = 1, palette = 3) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
   facet_grid(.~set.category, scales = "free", space = "free") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
@@ -257,11 +313,11 @@ power.0.8 <- summarized %>%
 precision.0.8 <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   dplyr::filter(h2 == 0.8) %>%
-  ggplot(., mapping = aes(x = reorder(strain_set,mean.interval.Mb), y = mean.interval.Mb, colour = Precision)) +
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = mean.interval.Mb, colour = Precision)) +
   theme_bw() +
   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  scale_colour_distiller(type = "seq", direction = 1, palette = 5) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
   facet_grid(.~set.category, scales = "free", space = "free") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
@@ -271,4 +327,205 @@ precision.0.8 <- summarized %>%
 
 cowplot::plot_grid(power.0.5, precision.0.5, ncol = 1)
 cowplot::plot_grid(power.0.8, precision.0.8, ncol = 1)
+```
+
+## Percent of Phenotypic Variance Explained by QTL
+
+```{r pve plots, echo=FALSE, fig.height=6, fig.width=7}
+# h2 = 0.5
+power.0.5 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = mean.PVE, colour = Power)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
+                      ymax = mean.PVE+sd.PVE), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "Variance Explained: h2 = 0.5",
+       x = "Strain Set",
+       y = "PVE (%)")
+
+precision.0.5 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = mean.PVE, colour = Precision)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
+                      ymax = mean.PVE+sd.PVE), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "Variance Explained: h2 = 0.5",
+       x = "Strain Set",
+       y = "PVE (%)")
+
+# h2 = 0.8
+power.0.8 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Power), y = mean.PVE, colour = Power)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
+                      ymax = mean.PVE+sd.PVE), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "Variance Explained: h2 = 0.8",
+       x = "Strain Set",
+       y = "PVE (%)")
+
+precision.0.8 <- summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,Precision), y = mean.PVE, colour = Precision)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
+                      ymax = mean.PVE+sd.PVE), alpha = 0.7) +
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
+  facet_grid(.~set.category, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(title = "Variance Explained: h2 = 0.8",
+       x = "Strain Set",
+       y = "PVE (%)")
+
+cowplot::plot_grid(power.0.5, precision.0.5, ncol = 1)
+cowplot::plot_grid(power.0.8, precision.0.8, ncol = 1)
+```
+
+## Population Genomic Differences Between CeNDR Strain Sets
+
+```{r sweptness, echo=FALSE, fig.height=6, fig.width=7}
+# Lifted from generate_strain_lists_swept.R (10/02/2020)
+# For two-set combinations only so far
+strain.data <- data.table::fread("data/CelegansStrainData.tsv") 
+sweeps <- data.table::fread("data/sweep_summary.tsv")
+metadata <- sweeps %>%
+  dplyr::full_join(., strain.data) %>%
+  dplyr::mutate(I = dplyr::if_else(condition = I == TRUE, 
+                                   true = "Swept", 
+                                   false = "Unswept"),
+                II = dplyr::if_else(condition = II == TRUE, 
+                                    true = "Swept", 
+                                    false = "Unswept"),
+                III = dplyr::if_else(condition = III == TRUE, 
+                                     true = "Swept", 
+                                     false = "Unswept"),
+                IV = dplyr::if_else(condition = IV == TRUE, 
+                                    true = "Swept", 
+                                    false = "Unswept"),
+                V = dplyr::if_else(condition = V == TRUE, 
+                                   true = "Swept", 
+                                   false = "Unswept"),
+                X = dplyr::if_else(condition = X == TRUE, 
+                                   true = "Swept", 
+                                   false = "Unswept"))
+
+cendr.strain.sets.nested <- strain.data %>%
+  dplyr::select(isotype, strain_set) %>%
+  dplyr::filter(strain_set %in% c(1:8)) %>%
+  dplyr::arrange(strain_set) %>%
+  dplyr::group_by(strain_set) %>%
+  tidyr::nest()
+
+strain.sets <- c(c(1:8),c(1:8))
+strain.sets <- unique(strain.sets)
+gather.strain.sets <- t(combn(strain.sets, 2)) %>%
+  as.data.frame() %>%
+  `colnames<-`(c("set1","set2"))
+
+cendr.strain.set.sweptness <- list()
+for(i in 1:nrow(gather.strain.sets)){
+  combo <- gather.strain.sets[i,]
+  
+  set1 <- as.numeric(combo$set1)
+  set2 <- as.numeric(combo$set2)
+  combo.name <- paste("cendr.set",set1,"set",set2,sep = ".")
+
+  combined.strain.sets <- data.frame(cendr.strain.sets.nested$data[set1]) %>%
+    dplyr::full_join(.,data.frame(cendr.strain.sets.nested$data[set2])) %>%
+    dplyr::left_join(.,metadata) %>%
+    dplyr::select(isotype, I, II, III, IV, V, X, swept_chroms) %>%
+    dplyr::mutate(strain_set = combo.name)
+  
+  cendr.strain.set.sweptness[[i]] <- combined.strain.sets
+}
+cendr.strain.sets.df <- do.call(rbind, cendr.strain.set.sweptness) %>%
+  dplyr::full_join(., summarized) %>%
+  dplyr::select(-c(II, III)) %>%
+  tidyr::pivot_longer(cols = c(I, IV, V, X), names_to = c("Swept.Chr"), values_to = c("Status")) 
+
+swept.power.0.5 <- cendr.strain.sets.df %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::summarise(mean(swept_chroms), sd(swept_chroms)) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  dplyr::left_join(., summarized) %>%
+  dplyr::filter(set.category == "CeNDR Subset") %>%
+  ggplot(., mapping = aes(x = reorder(strain_set, Power), y = `mean(swept_chroms)`, colour = Power)) +
+  theme_bw() + 
+  geom_pointrange(aes(ymin = `mean(swept_chroms)`-`sd(swept_chroms)`,
+                      ymax = `mean(swept_chroms)`+`sd(swept_chroms)`)) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(y = "Average Number of Swept Chromosomes per Strain",
+       x = "Strain Set",
+       title = "Swept Chromosomes: h2 = 0.5")
+
+swept.precision.0.5 <- cendr.strain.sets.df %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::summarise(mean(swept_chroms), sd(swept_chroms)) %>%
+  dplyr::filter(h2 == 0.5) %>%
+  dplyr::left_join(., summarized) %>%
+  dplyr::filter(set.category == "CeNDR Subset") %>%
+  ggplot(., mapping = aes(x = reorder(strain_set, Precision), y = `mean(swept_chroms)`, colour = Precision)) +
+  theme_bw() + 
+  geom_pointrange(aes(ymin = `mean(swept_chroms)`-`sd(swept_chroms)`,
+                      ymax = `mean(swept_chroms)`+`sd(swept_chroms)`)) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(y = "Average Number of Swept Chromosomes per Strain",
+       x = "Strain Set",
+       title = "Swept Chromosomes: h2 = 0.5")
+
+
+
+swept.power.0.8 <- cendr.strain.sets.df %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::summarise(mean(swept_chroms), sd(swept_chroms)) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  dplyr::left_join(., summarized) %>%
+  dplyr::filter(set.category == "CeNDR Subset") %>%
+  ggplot(., mapping = aes(x = reorder(strain_set, Power), y = `mean(swept_chroms)`, colour = Power)) +
+  theme_bw() + 
+  geom_pointrange(aes(ymin = `mean(swept_chroms)`-`sd(swept_chroms)`,
+                      ymax = `mean(swept_chroms)`+`sd(swept_chroms)`)) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlGnBu") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(y = "Average Number of Swept Chromosomes per Strain",
+       x = "Strain Set",
+       title = "Swept Chromosomes: h2 = 0.8")
+
+swept.precision.0.8 <- cendr.strain.sets.df %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::summarise(mean(swept_chroms), sd(swept_chroms)) %>%
+  dplyr::filter(h2 == 0.8) %>%
+  dplyr::left_join(., summarized) %>%
+  dplyr::filter(set.category == "CeNDR Subset") %>%
+  ggplot(., mapping = aes(x = reorder(strain_set, Precision), y = `mean(swept_chroms)`, colour = Precision)) +
+  theme_bw() + 
+  geom_pointrange(aes(ymin = `mean(swept_chroms)`-`sd(swept_chroms)`,
+                      ymax = `mean(swept_chroms)`+`sd(swept_chroms)`)) + 
+  scale_colour_distiller(type = "seq", direction = 1, palette = "YlOrBr") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(y = "Average Number of Swept Chromosomes per Strain",
+       x = "Strain Set",
+       title = "Swept Chromosomes: h2 = 0.8")
+  
+cowplot::plot_grid(swept.power.0.5, swept.precision.0.5, ncol = 1)
+cowplot::plot_grid(swept.precision.0.5, swept.precision.0.8, ncol = 1)
 ```
