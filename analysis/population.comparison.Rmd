@@ -16,13 +16,15 @@ require(tidymodels)
 require(nationalparkcolors)
 require(RColorBrewer)
 require(GenomicRanges)
+require(cowplot)
 ```
 
 ## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
-load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData") # EMMA, hard filtered variants
+# load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData")
+load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20201019.RData") # EMMA, hard filtered variants
 dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -35,14 +37,20 @@ dat <- simulation.metrics.df %>%
                 startPOS = as.numeric(startPOS),
                 peakPOS = as.numeric(peakPOS),
                 endPOS = as.numeric(endPOS),
-                var.exp  = as.numeric(var.exp),
+                var.exp  = as.numeric(var.exp), # watch
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
                 peak_id = as.numeric(peak_id),
                 BETA = as.numeric(BETA),
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size)) %>%
-  dplyr::filter(algorithm != "No Successful Mappings")
+                interval_size = as.numeric(interval_size),
+                algorithm = if_else(condition = algorithm == "EMMAx",
+                                    true = "EMMA",
+                                    false = algorithm)) %>%
+  dplyr::filter(algorithm != "No Successful Mappings",
+                CHROM != 7)
+
 ```
 
 ## Simulation Parameters
@@ -78,7 +86,7 @@ dat %>%
   ggplot(mapping = aes(x = Frequency, fill = strain_set)) +
   theme_minimal() + 
   geom_density(position = "stack") + 
-  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
   xlim(c(0.05,0.5)) + 
   labs(x = "Minor Allele Frequency",
        y = "Frequency of Simulated QTL (Smoothed Density)")
@@ -90,7 +98,7 @@ dat %>%
   ggplot(., mapping = aes(x = abs(Effect), fill = strain_set)) +
   theme_minimal() + 
   geom_density(position = "stack") + 
-  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
   labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
@@ -110,6 +118,16 @@ precision <- dat %>%
   yardstick::precision(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Precision")
 
+pr_auc <- dat %>%
+  dplyr::group_by(h2, algorithm, strain_set) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "Precision-Recall_AUC")
+
+roc_auc <- dat %>%
+  dplyr::group_by(h2, algorithm, strain_set) %>%
+  yardstick::roc_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "ROC_AUC")
+
 resolution <- dat %>%
   dplyr::filter(Detected == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
@@ -120,7 +138,11 @@ resolution <- dat %>%
 
 summarized <- power %>%
   dplyr::full_join(., precision) %>%
+  dplyr::full_join(., pr_auc) %>%
+  dplyr::full_join(., roc_auc) %>%
+  dplyr::full_join(., precision) %>%
   tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power))) %>%
   dplyr::left_join(.,resolution) %>%
   dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
                 median.interval.Mb = `median(interval_size)`/1000000,
@@ -132,44 +154,126 @@ summarized <- power %>%
 ```
 
 ```{r power precision plots, echo=FALSE}
-summarized %>%
+algorithm.for.plots <- "EMMA"
+herit.Fscore <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Power, colour = strain_set)) +
+  dplyr::filter(algorithm == algorithm.for.plots) %>%
+  ggplot(., mapping = aes(x = h2, y = F1score, colour = strain_set)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
   geom_line(aes(group = strain_set)) +
-  facet_grid(.~algorithm) +
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  # facet_grid(.~algorithm) +
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
   ylim(c(0,1)) + 
-  labs(title = "Power v. Heritability",
-       x = expression(italic(h^2)))
-summarized %>%
+  theme(legend.position = "none") + 
+  labs(x = expression(italic(h^2)), y = "F-score")
+
+herit.prauc <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Precision, colour = strain_set)) +
+  dplyr::filter(algorithm == algorithm.for.plots) %>%
+  ggplot(., mapping = aes(x = h2, y = `Precision-Recall_AUC`, colour = strain_set)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
   geom_line(aes(group = strain_set)) +
-  facet_grid(.~algorithm) +
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
+  # facet_grid(.~algorithm) +
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
   ylim(c(0,1)) + 
-  labs(title = "Precision v. Heritability",
-       x = expression(italic(h^2)))
+  theme(legend.position = "none") + 
+  labs(x = expression(italic(h^2)), y = "Precision-Recall AUC")
+
+cowplot::plot_grid(herit.prauc, herit.Fscore, ncol = 2)
 ```
 
 ## QTL Resolution
 
 ```{r interval width plots, echo=FALSE}
+# summarized %>%
+#   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+#   dplyr::filter(algorithm == algorithm.for.plots) %>%
+#   ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = strain_set)) +
+#   theme_bw() +
+#   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+#                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+#   # theme(legend.position = "none") + 
+#   # facet_grid(.~algorithm) +
+#   scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
+#   labs(x = expression(italic(h^2)),
+#        y = "Mean QTL Interval Width (Mb)")
+
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = strain_set)) +
+  dplyr::filter(algorithm == algorithm.for.plots) %>%
+  ggplot(., mapping = aes(x = F1score, y = mean.interval.Mb, colour = strain_set)) +
   theme_bw() +
   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  facet_grid(.~algorithm) +
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"blue","orange"), name = "Strain Set") + 
-  labs(title = "QTL Resolution v. Heritability",
-       x = expression(italic(h^2)),
+  theme(legend.position = "none") + 
+  # facet_grid(.~algorithm) +]
+  xlim(c(0,1)) + 
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
+  labs(x = "F-score",
        y = "Mean QTL Interval Width (Mb)")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  dplyr::filter(algorithm == algorithm.for.plots) %>%
+  ggplot(., mapping = aes(x = `Precision-Recall_AUC`, y = mean.interval.Mb, colour = strain_set)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
+  theme(legend.position = "none") + 
+  # facet_grid(.~algorithm) +]
+  xlim(c(0,1)) + 
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
+  labs(x = "Precision-Recall AUC",
+       y = "Mean QTL Interval Width (Mb)")
+
+```
+
+## Beavis Effect
+
+```{r beavis, echo=FALSE}
+options(scipen = 9999)
+f <- dat %>%
+  dplyr::select(QTL,Simulated, Detected, Effect, Frequency, Simulated.QTL.VarExp, var.exp, log10p, h2, algorithm, strain_set, sim) %>%
+  dplyr::mutate(Simulated.QTL.VarExp = Simulated.QTL.VarExp*100,
+                var.exp = var.exp*100,
+                condensed.strain.set = if_else(strain_set != "genome.swept" & strain_set != "genome.unswept", 
+                                               true = "Subsample",
+                                               false = strain_set))
+f$condensed.strain.set <- as.factor(f$condensed.strain.set)
+levels(f$condensed.strain.set) <- c("Swept","Unswept","Subsample")
+
+f %>%
+  dplyr::filter(!is.na(Simulated.QTL.VarExp), 
+                !is.na(var.exp), 
+                algorithm == algorithm.for.plots) %>% # filter: only true positives from specified algorithm
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp, y = var.exp, colour = strain_set)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.6) +
+  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
+  geom_abline(slope = 1) + 
+  theme(legend.position = "none") + 
+  facet_grid(condensed.strain.set~h2)
+
+f %>%
+  dplyr::filter(!is.na(Simulated.QTL.VarExp), 
+                !is.na(var.exp), 
+                algorithm == algorithm.for.plots) %>%
+  tidyr::pivot_longer(cols = contains("var", ignore.case = T), names_to = "Type.Of.Variance") %>%
+  dplyr::mutate(Type.Of.Variance = if_else(condition = Type.Of.Variance == "Simulated.QTL.VarExp",
+                                           true = "Known",
+                                           false = "Estimated by GWA")) %>%
+  ggplot(., mapping = aes(x = value, fill = Type.Of.Variance)) + 
+  theme_bw() + 
+  geom_density(alpha = 0.5) + 
+  # scale_fill_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
+  scale_fill_manual(values = c(brewer.pal(4, "Dark2")), name = "Source") +
+  theme(legend.position = "top") + 
+  facet_grid(condensed.strain.set~h2) + 
+  labs(x = "Phenotypic Variance Explained By QTL (%)",
+       y = "Density")
+
 ```
 
 ## Divergent Regions
@@ -235,4 +339,21 @@ simulated %>%
   dplyr::group_by(strain_set, divergent, detected) %>%
   dplyr::summarise(n()) %>%
   tidyr::pivot_wider(names_from = detected, values_from = `n()`)
+```
+
+```{r eval=FALSE, include=FALSE}
+choose.mapping.power <- dat %>%
+  dplyr::group_by(h2, algorithm, strain_set, Rep) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+power.cutoff <- 
+strains <- "genome.unswept"
+
+choose.mapping.power %>%
+  dplyr::filter(.estimate > power.cutoff,
+                strain_set == strains)
+
+#  Rscript bin/manhattan.plotting.R 5 6 0.2 0.05 0.5-5 genome.swept CeNDR2020_population_subsampling
+#  Rscript bin/manhattan.plotting.R 5 11 0.2 0.05 0.5-5 genome.unswept CeNDR2020_population_subsampling
 ```
