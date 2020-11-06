@@ -337,7 +337,7 @@ summarized %>%
 ```{r power precision v varexplained, echo=FALSE}
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = Power, y = , colour = algorithm)) +
+  ggplot(., mapping = aes(x = Power, y = mean.PVE, colour = algorithm)) +
   theme_bw() +
   geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
                       ymax = mean.PVE+sd.PVE), alpha = 0.7) + 
