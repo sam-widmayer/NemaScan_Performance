@@ -176,7 +176,7 @@ ggplot(noise, mapping = aes(x = h2, y = `n()`, fill = extreme.interval)) +
   theme(legend.position = "top",
         title = element_text(vjust = 0.5)) + 
   labs(title = "Q: Why is power so consistently different across algorithms?",
-       subtitle = "A: Some algorithms produce large false-positives at greater frequency",
+       subtitle = "A: Some algorithms produce large false-positives at greater frequency when only 1 QTL is simulated",
        y = "Number of QTL")
   
   
