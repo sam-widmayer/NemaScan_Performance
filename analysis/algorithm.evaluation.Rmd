@@ -180,7 +180,7 @@ ggplot(noise, mapping = aes(x = h2, y = `n()`, fill = extreme.interval)) +
   
 ```
 
-```{r ROC curve, echo=FALSE}
+```{r ROC curve, echo=FALSE, fig.height=8, fig.width=10}
 # CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
 pr.curve <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
