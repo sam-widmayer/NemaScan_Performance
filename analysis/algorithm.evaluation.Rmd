@@ -247,7 +247,7 @@ summarized %>%
        x = expression(italic(h^2)))
 ```
 
-```{r}
+```{r MAF+VE, message=FALSE, warning=FALSE}
 MAF.cuts <- seq(0, 1, by = 0.025)
 var.exp.cuts <- seq(0, 1, by = 0.1)
 
