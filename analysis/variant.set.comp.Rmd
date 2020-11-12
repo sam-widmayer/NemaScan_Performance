@@ -26,7 +26,7 @@ Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 setwd("~/Documents/projects/NemaScan_Performance/")
 
 # Load Hard-Filtered Simulations
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData") # EMMA, hard filtered variants
+load("data/NemaScan_Performance.Variant.Set.Hard.Filtered.20201111.RData")
 hard.filtered <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -46,7 +46,7 @@ hard.filtered <- simulation.metrics.df %>%
                 Frequency = as.numeric(Frequency),
                 log10p = as.numeric(log10p),
                 interval_size = as.numeric(interval_size),
-                startPOS = if_else(condition = is.na(startPOS), 
+                startPOS = if_else(condition = is.na(startPOS), # if simulated QTL wasn't detected, form an interval for overlap calcs
                                    true = POS, 
                                    false = startPOS),
                 peakPOS = if_else(condition = is.na(peakPOS), 
@@ -55,12 +55,12 @@ hard.filtered <- simulation.metrics.df %>%
                 endPOS = if_else(condition = is.na(endPOS), 
                                    true = POS, 
                                    false = endPOS)) %>%
-  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(algorithm %in% c("LMM-EXACT-INBRED","LMM-EXACT-LOCO")) %>%
   dplyr::mutate(variant.set = "hard-filtered")
 
 # Load Imputed Simulations
-load(file = "data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData") # EMMAx, imputed variants
-imputed <- simuation.metrics.df %>%
+load("data/NemaScan_Performance.Variant.Set.Imputed.20201111.RData")
+imputed <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
@@ -78,8 +78,8 @@ imputed <- simuation.metrics.df %>%
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size), 
-                startPOS = if_else(condition = is.na(startPOS), 
+                interval_size = as.numeric(interval_size),
+                startPOS = if_else(condition = is.na(startPOS), # if simulated QTL wasn't detected, form an interval for overlap calcs
                                    true = POS, 
                                    false = startPOS),
                 peakPOS = if_else(condition = is.na(peakPOS), 
@@ -88,8 +88,11 @@ imputed <- simuation.metrics.df %>%
                 endPOS = if_else(condition = is.na(endPOS), 
                                    true = POS, 
                                    false = endPOS)) %>%
-  dplyr::filter(algorithm == "LMM-EXACT") %>%
+  dplyr::filter(algorithm %in% c("LMM-EXACT-INBRED","LMM-EXACT-LOCO")) %>%
   dplyr::mutate(variant.set = "imputed")
+
+table(hard.filtered$Simulated, hard.filtered$Detected)
+table(imputed$Simulated, imputed$Detected)
 
 # Divergent Regions
 common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
@@ -168,6 +171,13 @@ imputed.div.df <- imputed %>%
 
 dat <- imputed.div.df %>%
   dplyr::full_join(hard.filtered.div.df)
+
+summary(dat$QTL %in% paste(hard.filtered.variants$chrom, hard.filtered.variants$start, sep = ":"))
+
+
+poop<- dat %>%
+  dplyr::group_by(h2, algorithm, variant.set, divergent.pos, Simulated, Detected) %>%
+  dplyr::summarise(n())
 ```
 
 
@@ -190,18 +200,6 @@ dat %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL)) %>%
   dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
-  theme_bw() + 
-  geom_point() + 
-  facet_grid(variant.set~CHROM, drop = TRUE) + 
-  labs(x = "Genomic position (Mb)",
-       y = "Causal QTL Effect",
-       title = "Where were QTL Simulated?")
-
-dat %>%
-  dplyr::filter(Simulated == TRUE,
-                !duplicated(QTL)) %>%
-  dplyr::filter(!is.na(CHROM)) %>%
   ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = divergent.pos)) + 
   theme_bw() + 
   geom_point(shape = 21) + 
@@ -210,14 +208,6 @@ dat %>%
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect",
        title = "Where were QTL Simulated?")
-
-dat %>%
-  dplyr::filter(Simulated == TRUE,
-                !duplicated(QTL)) %>%
-  dplyr::filter(!is.na(CHROM)) %>%
-  dplyr::group_by(variant.set, divergent.pos) %>%
-  dplyr::summarise(n()) %>%
-  tidyr::pivot_wider(names_from = divergent.pos, values_from = `n()`)
 
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
@@ -247,20 +237,20 @@ dat %>%
 
 ```{r power precision resolution, echo=FALSE}
 power <- dat %>%
-  dplyr::group_by(h2, variant.set) %>%
+  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power")
 
 precision <- dat %>%
-  dplyr::group_by(h2, variant.set) %>%
+  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
   yardstick::precision(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Precision")
 
 resolution <- dat %>%
-  dplyr::filter(Detected == TRUE) %>%
+  dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp, variant.set) %>%
-  dplyr::group_by(h2, variant.set) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp, variant.set, divergent.pos) %>%
+  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
                    mean(var.exp), median(var.exp), sd(var.exp))
 
@@ -273,127 +263,77 @@ summarized <- power %>%
                 sd.interval.Mb = `sd(interval_size)`/1000000, 
                 mean.PVE = `mean(var.exp)`*100,
                 median.PVE = `median(var.exp)`*100,
-                sd.PVE = `sd(var.exp)`*100, 
-                .keep = "unused")
+                sd.PVE = `sd(var.exp)`*100,
+                FPR = 1- Precision)
 ```
 
 ```{r ROC curve, echo=FALSE}
 # CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
 dat %>%
-  dplyr::group_by(h2, variant.set) %>%
-  yardstick::roc_curve(Simulated, log10p) %>%
-  dplyr::mutate(h2 = as.numeric(h2)) %>%
-  ggplot(., mapping = aes(x = 1-specificity, y = sensitivity, group = h2, colour = variant.set, alpha = h2)) + 
+  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
+  yardstick::pr_curve(Simulated, log10p) %>%
+  ggplot(., mapping = aes(x = recall, y = precision, group = h2, colour = h2)) + 
   theme_bw() + 
   geom_path() +
-  geom_abline(lty = 3) +
-  scale_colour_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
-  facet_grid(.~variant.set, scales = "free", space = "free") +
-  labs(x = "False-Positive Rate", y = "Power")
+  scale_colour_brewer(palette = "RdPu", name = "Trait Heritability") +
+  facet_grid(variant.set~divergent.pos, scales = "free", space = "free") +
+  ylim(c(0,1)) + 
+  labs(x = "Recall", y = "Precision")
 ```
 
 ### Mapping Performance with Imputed Variants vs. Hard-Filtered Variants
 
 ```{r power precision plots, echo=FALSE}
 summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Power, fill = variant.set)) +
+  ggplot(., mapping = aes(x = h2, y = Power, fill = variant.set, shape = algorithm)) +
   theme_bw() +
-  geom_jitter(width = 0.01, height = 0, shape = 21, size = 3) +
-  geom_line(aes(group = variant.set)) +
+  geom_jitter(height = 0, width = 0.01, alpha = 0.8) +
+  facet_grid(.~divergent.pos, scales = "free", space = "free") +
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  scale_shape_manual(values = c(21,22), name = "Algorithm") + 
   ylim(c(0,1)) + 
   labs(title = "Power v. Heritability",
        x = expression(italic(h^2)))
 
 summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Precision, fill = variant.set)) +
+  ggplot(., mapping = aes(x = h2, y = FPR, fill = variant.set, shape = algorithm)) +
   theme_bw() +
-  geom_jitter(width = 0.01, height = 0, shape = 21, size = 3) +
-  geom_line(aes(group = variant.set)) +
+  geom_jitter(height = 0, width = 0.01, alpha = 0.8) +
+  facet_grid(.~divergent.pos, scales = "free", space = "free") +
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  scale_shape_manual(values = c(21,22), name = "Algorithm") + 
   ylim(c(0,1)) + 
-  labs(title = "Precision v. Heritability",
+  labs(title = "FPR v. Heritability",
        x = expression(italic(h^2)))
+
 ```
 
-### Mapping Resolution with Imputed Variants vs. Hard-Filtered Variants
-
-```{r interval width plots, echo=FALSE}
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, fill = variant.set)) +
-  theme_bw() +
-  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
-                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7, shape = 21, size = 1) +
-  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
-  labs(title = "QTL Resolution v. Heritability",
-       x = expression(italic(h^2)),
-       y = "Mean QTL Interval Width (Mb)")
-
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = Power, y = mean.interval.Mb, fill = variant.set)) +
-  theme_bw() +
-  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
-                        ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7, shape = 21, size = 1) +
-  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
-  labs(title = "QTL Resolution v. Mapping Power",
-       x = "Power",
-       y = "QTL Interval Width (Mb)")
-```
-
-### Effect Estimation with Imputed Variants vs. Hard-Filtered Variants
-
-```{r power precision v varexplained, echo=FALSE}
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = Power, y = mean.PVE, fill = variant.set)) +
-  theme_bw() +
-  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
-                      ymax = mean.PVE+sd.PVE), alpha = 0.7, shape = 21, size = 1) + 
-  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
-  labs(title = "Power v. QTL Variance Explained",
-       y = "Variance Explained by QTL (%)",
-       x = "Mapping Power")
-
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = Precision, y = mean.PVE, fill = variant.set)) +
-  theme_bw() +
-  geom_pointrange(aes(ymin = mean.PVE-sd.PVE,
-                      ymax = mean.PVE+sd.PVE), alpha = 0.7, shape = 21, size = 1) + 
-  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
-  labs(title = "Precision v. QTL Variance Explained",
-       y = "Variance Explained by QTL (%)",
-       x = "Mapping Precision")
-```
 
 ## Divergent Regions and False-Positives
+
 ```{r divergent region breakdown, echo=FALSE}
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
-  dplyr::group_by(variant.set, divergent.pos, detected) %>%
+  dplyr::group_by(variant.set, divergent.pos, Detected) %>%
   dplyr::summarise(n()) %>%
   tidyr::pivot_wider(values_from = `n()`, names_from = divergent.pos) %>%
   as.data.frame()
 
 dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::group_by(variant.set, divergent.interval, detected) %>%
+  dplyr::filter(Simulated == FALSE) %>%
+  dplyr::group_by(variant.set, divergent.pos) %>%
   dplyr::summarise(n()) %>%
-  tidyr::pivot_wider(values_from = `n()`, names_from = divergent.interval) %>%
+  tidyr::pivot_wider(values_from = `n()`, names_from = divergent.pos) %>%
   as.data.frame()
 
 reps <- dat %>%
   dplyr::group_by(h2, Rep, variant.set) %>%
   tidyr::nest()
 
-# data = reps$data[[214]]
-# rep = reps$Rep[[214]]
-# h2 = reps$h2[[214]]
-# variant.set = reps$variant.set[[214]]
+data = reps$data[[214]]
+rep = reps$Rep[[214]]
+h2 = reps$h2[[214]]
+variant.set = reps$variant.set[[214]]
 
 closest.FP.calc <- function(data, rep, h2, variant.set){
 # ALL REPS SEPARATED:
