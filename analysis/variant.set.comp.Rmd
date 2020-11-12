@@ -172,9 +172,6 @@ imputed.div.df <- imputed %>%
 dat <- imputed.div.df %>%
   dplyr::full_join(hard.filtered.div.df)
 
-summary(dat$QTL %in% paste(hard.filtered.variants$chrom, hard.filtered.variants$start, sep = ":"))
-
-
 poop<- dat %>%
   dplyr::group_by(h2, algorithm, variant.set, divergent.pos, Simulated, Detected) %>%
   dplyr::summarise(n())
