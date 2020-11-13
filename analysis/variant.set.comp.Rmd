@@ -453,9 +453,10 @@ ggplot(closest.intraFP.summary, mapping = aes(x = variant.set, y = mean.QTL.dist
 closest.extraFP.summary <- closest.FP.df %>%
   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
   dplyr::group_by(CHROM, algorithm, h2, variant.set, divergent.interval) %>%
-  dplyr::summarise(n(), mean(interval_size/1000000), sd(interval_size/1000000))
+  dplyr::summarise(n(), mean(interval_size/1000000), sd(interval_size/1000000)) %>%
+  `colnames<-`(c("CHROM","algorithm","h2","variant.set","divergent.interval","n","mean.interval","sd.interavl"))
 
-ggplot(closest.extraFP.summary, mapping = aes(x = variant.set, y =`n()`, fill = divergent.interval, alpha = h2)) + 
+ggplot(closest.extraFP.summary, mapping = aes(x = variant.set, y = n, fill = divergent.interval, alpha = h2)) + 
   theme_bw() + 
   geom_col(position = "stack", colour = "black") + 
   scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
@@ -466,8 +467,7 @@ ggplot(closest.extraFP.summary, mapping = aes(x = variant.set, y =`n()`, fill = 
   labs(x = "Chromosome",
        y = "Extra-Chromosomal False-Positives")
 
-ggplot(closest.extraFP.summary, mapping = aes(x = variant.set,
-                                              y =`mean(interval_size/1000000)`, 
+ggplot(closest.extraFP.summary, mapping = aes(x = variant.set, y = mean.interval, 
                                               fill = divergent.interval, colour = h2)) + 
   theme_bw() + 
   geom_jitter(shape = 21, width = 0.05, size = 2) + 
