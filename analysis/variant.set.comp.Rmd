@@ -26,7 +26,7 @@ Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 setwd("~/Documents/projects/NemaScan_Performance/")
 
 # Load Hard-Filtered Simulations
-load("data/NemaScan_Performance.Variant.Set.Hard.Filtered.20201111.RData")
+load("data/NemaScan_Performance.Variant.Set.HF.chr125.20201112.RData")
 hard.filtered <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -59,7 +59,8 @@ hard.filtered <- simulation.metrics.df %>%
   dplyr::mutate(variant.set = "hard-filtered")
 
 # Load Imputed Simulations
-load("data/NemaScan_Performance.Variant.Set.Imputed.20201111.RData")
+# load("data/NemaScan_Performance.Variant.Set.Imputed.20201111.RData")
+load("data/NemaScan_Performance.Variant.Set.Imputed.chr125.20201112.RData")
 imputed <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -91,8 +92,7 @@ imputed <- simulation.metrics.df %>%
   dplyr::filter(algorithm %in% c("LMM-EXACT-INBRED","LMM-EXACT-LOCO")) %>%
   dplyr::mutate(variant.set = "imputed")
 
-table(hard.filtered$Simulated, hard.filtered$Detected)
-table(imputed$Simulated, imputed$Detected)
+
 
 # Divergent Regions
 common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
@@ -201,10 +201,10 @@ dat %>%
   theme_bw() + 
   geom_point(shape = 21) + 
   scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
-  facet_grid(variant.set~CHROM, drop = TRUE) + 
+  facet_grid(variant.set~CHROM, drop = TRUE, scales = "free", space = "free") + 
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect",
-       title = "Where were QTL Simulated?")
+       title = "Where were QTL simulated?")
 
 dat %>%
   dplyr::filter(Simulated == TRUE) %>%
@@ -246,10 +246,10 @@ precision <- dat %>%
 resolution <- dat %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp, variant.set, divergent.pos) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, variant.set, divergent.pos) %>%
   dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
-                   mean(var.exp), median(var.exp), sd(var.exp))
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
 
 summarized <- power %>%
   dplyr::full_join(., precision) %>%
@@ -258,13 +258,13 @@ summarized <- power %>%
   dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
                 median.interval.Mb = `median(interval_size)`/1000000,
                 sd.interval.Mb = `sd(interval_size)`/1000000, 
-                mean.PVE = `mean(var.exp)`*100,
-                median.PVE = `median(var.exp)`*100,
-                sd.PVE = `sd(var.exp)`*100,
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
                 FPR = 1- Precision)
 ```
 
-```{r ROC curve, echo=FALSE}
+```{r pr curve, echo=FALSE}
 # CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
 dat %>%
   dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
@@ -282,9 +282,9 @@ dat %>%
 
 ```{r power precision plots, echo=FALSE}
 summarized %>%
-  ggplot(., mapping = aes(x = h2, y = Power, fill = variant.set, shape = algorithm)) +
+  ggplot(., mapping = aes(x = h2, y = Power, fill = variant.set)) +
   theme_bw() +
-  geom_jitter(height = 0, width = 0.01, alpha = 0.8) +
+  geom_jitter(height = 0, width = 0.01, alpha = 0.8, shape =21, size = 4) +
   facet_grid(.~divergent.pos, scales = "free", space = "free") +
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
   scale_shape_manual(values = c(21,22), name = "Algorithm") + 
@@ -293,9 +293,9 @@ summarized %>%
        x = expression(italic(h^2)))
 
 summarized %>%
-  ggplot(., mapping = aes(x = h2, y = FPR, fill = variant.set, shape = algorithm)) +
+  ggplot(., mapping = aes(x = h2, y = FPR, fill = variant.set)) +
   theme_bw() +
-  geom_jitter(height = 0, width = 0.01, alpha = 0.8) +
+  geom_jitter(height = 0, width = 0.01, alpha = 0.8, shape =21,size = 4) +
   facet_grid(.~divergent.pos, scales = "free", space = "free") +
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
   scale_shape_manual(values = c(21,22), name = "Algorithm") + 
@@ -303,6 +303,17 @@ summarized %>%
   labs(title = "FPR v. Heritability",
        x = expression(italic(h^2)))
 
+summarized %>%
+  ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, fill = divergent.pos)) +
+  theme_bw() +
+  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
+                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.8, shape = 21) +
+  facet_grid(~ variant.set + algorithm, scales = "free", space = "free") +
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
+  scale_shape_manual(values = c(21,22), name = "Algorithm") + 
+  theme(legend.position = "top") + 
+  labs(title = "Resolution v. Heritability",
+       x = expression(italic(h^2)))
 ```
 
 
@@ -310,29 +321,29 @@ summarized %>%
 
 ```{r divergent region breakdown, echo=FALSE}
 dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::group_by(variant.set, divergent.pos, Detected) %>%
+  dplyr::filter(Simulated == TRUE) %>% 
+  dplyr::group_by(algorithm, variant.set, divergent.pos, Detected) %>%
   dplyr::summarise(n()) %>%
   tidyr::pivot_wider(values_from = `n()`, names_from = divergent.pos) %>%
   as.data.frame()
 
 dat %>%
-  dplyr::filter(Simulated == FALSE) %>%
-  dplyr::group_by(variant.set, divergent.pos) %>%
+  dplyr::filter(Simulated == FALSE) %>% # should only be false positives
+  dplyr::group_by(algorithm, variant.set, divergent.pos) %>%
   dplyr::summarise(n()) %>%
   tidyr::pivot_wider(values_from = `n()`, names_from = divergent.pos) %>%
   as.data.frame()
 
 reps <- dat %>%
-  dplyr::group_by(h2, Rep, variant.set) %>%
+  dplyr::group_by(algorithm, h2, Rep, variant.set) %>%
   tidyr::nest()
 
-data = reps$data[[214]]
-rep = reps$Rep[[214]]
-h2 = reps$h2[[214]]
-variant.set = reps$variant.set[[214]]
+# data = reps$data[[214]]
+# rep = reps$Rep[[214]]
+# h2 = reps$h2[[214]]
+# variant.set = reps$variant.set[[214]]
 
-closest.FP.calc <- function(data, rep, h2, variant.set){
+closest.FP.calc <- function(data, rep, h2, variant.set, algorithm){
 # ALL REPS SEPARATED:
   chrom.split <- data %>%
     dplyr::group_by(CHROM) %>%
@@ -385,64 +396,88 @@ closest.FP.calc <- function(data, rep, h2, variant.set){
     as.data.frame() %>%
     dplyr::mutate(Rep = rep, 
                   h2 = h2,
-                  variant.set = variant.set)
+                  variant.set = variant.set,
+                  algorithm = algorithm)
 }
 closest.FP.nested <- purrr::pmap(.l = list(reps$data,
                                       reps$Rep,
                                       reps$h2,
-                                      reps$variant.set), 
+                                      reps$variant.set,
+                                      reps$algorithm), 
                                  .f = closest.FP.calc)
 closest.FP.df <- do.call(rbind, closest.FP.nested)
 ```
 
 ### Intra-Chromosomal False-Positives
-```{r echo=FALSE}
+```{r echo=FALSE, fig.height=7, fig.width=5}
 closest.intraFP.summary <- closest.FP.df %>%
   dplyr::filter(dist.from.QTL != "Extra-Chromosomal False-Positive") %>% # only intra-chrom
   dplyr::filter(Detected == TRUE,
                 Simulated == FALSE) %>% # only FPs
-  dplyr::group_by(h2, variant.set, divergent.pos, divergent.interval) %>%
+  dplyr::group_by(CHROM, h2, variant.set, divergent.pos, algorithm) %>%
   dplyr::summarise(mean(as.numeric(dist.from.QTL))/1000000,
                    sd(dist.from.QTL)/1000000,
                    n()) %>%
-  `colnames<-`(c("h2","variant.set","divergent.pos","divergent.interval","mean.QTL.dist","sd.QTL.dist","n"))
+  `colnames<-`(c("CHROM","h2","variant.set","divergent.pos","algorithm","mean.QTL.dist","sd.QTL.dist","n"))
 
-ggplot(closest.intraFP.summary, mapping = aes(x = h2, y = n, 
-                                              fill = divergent.interval)) + 
+ggplot(closest.intraFP.summary, mapping = aes(x = variant.set, y = n, 
+                                              fill = divergent.pos, alpha = h2)) + 
   theme_bw() + 
   geom_col(colour = "black") + 
-  facet_grid(variant.set~divergent.pos) + 
+  facet_grid(algorithm ~ CHROM) + 
+  theme(legend.position = "right", 
+        legend.direction = "vertical",
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
   scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence")+
-  labs(x = expression(italic(h^2)),
-       y = "Number of Intra-Chromosomal False-Positives")
+  labs(x = "Chromosome",
+       y = "Intra-Chromosomal False-Positives")
 
 
-ggplot(closest.intraFP.summary, mapping = aes(x = h2, y = mean.QTL.dist, 
-                                              fill = divergent.interval)) + 
+ggplot(closest.intraFP.summary, mapping = aes(x = variant.set, y = mean.QTL.dist, 
+                                              fill = divergent.pos, colour = h2)) + 
   theme_bw() + 
   geom_pointrange(aes(ymin = mean.QTL.dist-sd.QTL.dist,
-                      ymax = mean.QTL.dist+sd.QTL.dist), alpha = 0.7, shape = 21, size = 1) + 
-  facet_grid(variant.set~divergent.pos) + 
-  geom_line(aes(group = divergent.interval)) +
-  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence")+
-  labs(x = expression(italic(h^2)),
+                      ymax = mean.QTL.dist+sd.QTL.dist), shape = 21, size = 1) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
+  scale_colour_brewer(palette = "Set1") + 
+  facet_grid(algorithm ~ CHROM) + 
+  theme(legend.position = "right", 
+        legend.direction = "vertical",
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Chromosome",
        y = "Distance from Nearest Simulatd QTL (Mb)")
 ```
 
 ### Extra-Chromosomal False-Positives
-```{r echo=FALSE}
+```{r echo=FALSE, fig.height=5, fig.width=8}
 closest.extraFP.summary <- closest.FP.df %>%
   dplyr::filter(dist.from.QTL == "Extra-Chromosomal False-Positive") %>%
-  dplyr::group_by(h2, variant.set, divergent.interval) %>%
-  dplyr::summarise(n())
+  dplyr::group_by(CHROM, algorithm, h2, variant.set, divergent.interval) %>%
+  dplyr::summarise(n(), mean(interval_size/1000000), sd(interval_size/1000000))
 
-ggplot(closest.extraFP.summary, mapping = aes(x = h2, y =`n()`, fill = divergent.interval)) + 
+ggplot(closest.extraFP.summary, mapping = aes(x = variant.set, y =`n()`, fill = divergent.interval, alpha = h2)) + 
   theme_bw() + 
   geom_col(position = "stack", colour = "black") + 
   scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
-  facet_grid(variant.set~.) + 
+  facet_grid(algorithm~CHROM) + 
+    theme(legend.position = "top", 
+        legend.direction = "horizontal",
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
   labs(x = expression(italic(h^2)),
-       y = "Number of Extra-Chromosomal False-Positives")
+       y = "Extra-Chromosomal False-Positives")
+
+ggplot(closest.extraFP.summary, mapping = aes(x = variant.set,
+                                              y =`mean(interval_size/1000000)`, 
+                                              fill = divergent.interval, colour = h2)) + 
+  theme_bw() + 
+  geom_jitter(shape = 21, width = 0.05, size = 2) + 
+  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
+  facet_grid(algorithm~CHROM) + 
+    theme(legend.position = "top", 
+        legend.direction = "horizontal",
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Variant Set",
+       y = "False-Positive Interval Width (Mb)")
 ```
 
 
