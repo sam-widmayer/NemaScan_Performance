@@ -42,7 +42,7 @@ dat <- simulation.metrics.df %>%
                 #                     true = "EMMAx",
                 #                     false = algorithm)
                 ) %>%
-  dplyr::filter(algorithm != "No Successful Mappings",
+  dplyr::filter(!algorithm %in% c("No Successful Mappings","LMM-EXACT-LOCO-INBRED"),
                 CHROM != 7)
 ```
 
@@ -120,7 +120,7 @@ dat %>%
 #   
 ```
 
-```{r PR curve, echo=FALSE, fig.height=8, fig.width=10}
+```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
 pr.curve <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
@@ -129,6 +129,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = h2, colour = h
   theme_bw() + 
   geom_path() +
   ylim(c(0,1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
   scale_colour_brewer(palette = "PuOr", name = "Trait Heritability") +
   facet_grid(nQTL~algorithm, scales = "free", space = "free") +  
   labs(x = "Recall", y = "Precision")
@@ -138,8 +139,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = h2, colour = h
 algorithm.palette <- c("#E3B505", # EMMAx
                        "#DCB8CB", # LMM EXACT
                        "#5B2E48", # LMM EXACT INBRED
-                       "#87E5FD", # LMM EXACT LOCO
-                       "#087CA7") # LMM EXACT INBRED LOCO
+                       "#87E5FD") # LMM EXACT LOCO
 
 power <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
