@@ -32,6 +32,11 @@ metadata %>%
   theme_minimal() +
   geom_point()
 
+complete <- metadata %>%
+  dplyr::select(isotype) %>%
+  dplyr::filter(!duplicated(isotype))
+complete.list <- paste(complete$isotype,sep = "",collapse = ",")
+
 # Sweep-based strain lists
 chr.I.swept <- metadata %>%
   dplyr::filter(I == "Swept") %>%
@@ -208,7 +213,7 @@ hahnel_isotypes <- paste(hahnel_isotypes$isotype, sep = "", collapse = ",")
 
 
 # Combine strain sets
-strain.lists <- data.frame(c("chr.I.swept","chr.I.unswept",
+strain.lists <- data.frame(c("complete","chr.I.swept","chr.I.unswept",
                              "chr.II.swept","chr.II.unswept",
                              "chr.III.swept","chr.III.unswept",
                              "chr.IV.swept","chr.IV.unswept",
@@ -218,7 +223,7 @@ strain.lists <- data.frame(c("chr.I.swept","chr.I.unswept",
                              "full.subsample.200.1", "full.subsample.200.2", "full.subsample.200.3", "full.subsample.200.4", "full.subsample.200.5",
                              "full.subsample.300.1", "full.subsample.300.2", "full.subsample.300.3", "full.subsample.300.4", "full.subsample.300.5",
                              "full.subsample.96.1", "full.subsample.96.2", "full.subsample.96.3","hahnel.isotypes"), 
-                           c(chr.I.swept.list, chr.I.unswept.list,
+                           c(complete.list, chr.I.swept.list, chr.I.unswept.list,
                              chr.II.swept.list, chr.II.unswept.list,
                              chr.III.swept.list, chr.III.unswept.list,
                              chr.IV.swept.list, chr.IV.unswept.list,
