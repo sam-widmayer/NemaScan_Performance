@@ -154,15 +154,15 @@ summarized <- power %>%
 ```
 
 ```{r power precision plots, echo=FALSE}
-algorithm.for.plots <- "EMMA"
+# algorithm.for.plots <- "EMMA"
 herit.Fscore <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  dplyr::filter(algorithm == algorithm.for.plots) %>%
+  # dplyr::filter(algorithm == algorithm.for.plots) %>%
   ggplot(., mapping = aes(x = h2, y = F1score, colour = strain_set)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
   geom_line(aes(group = strain_set)) +
-  # facet_grid(.~algorithm) +
+  facet_grid(.~algorithm) +
   scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
   ylim(c(0,1)) + 
   theme(legend.position = "none") + 
@@ -170,12 +170,12 @@ herit.Fscore <- summarized %>%
 
 herit.prauc <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  dplyr::filter(algorithm == algorithm.for.plots) %>%
+  # dplyr::filter(algorithm == algorithm.for.plots) %>%
   ggplot(., mapping = aes(x = h2, y = `Precision-Recall_AUC`, colour = strain_set)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
   geom_line(aes(group = strain_set)) +
-  # facet_grid(.~algorithm) +
+  facet_grid(.~algorithm) +
   scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
   ylim(c(0,1)) + 
   theme(legend.position = "none") + 
