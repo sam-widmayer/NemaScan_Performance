@@ -11,6 +11,8 @@ require(tidyverse)
 require(tidymodels)
 require(nationalparkcolors)
 require(RColorBrewer)
+require(workflowr)
+require(viridis)
 ```
 
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
@@ -42,7 +44,8 @@ dat <- simulation.metrics.df %>%
                 #                     true = "EMMAx",
                 #                     false = algorithm)
                 ) %>%
-  dplyr::filter(!algorithm %in% c("No Successful Mappings","LMM-EXACT-LOCO-INBRED"),
+  dplyr::filter(!algorithm %in% c("No Successful Mappings",
+                                  "LMM-EXACT-LOCO-INBRED"),
                 CHROM != 7)
 ```
 
@@ -93,46 +96,26 @@ dat %>%
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
 
-```{r power precision resolution, echo=FALSE}
-# noise <- dat %>%
-#   dplyr::filter(Detected == TRUE,
-#                 Simulated == FALSE,
-#                 nQTL == 1) %>%
-#   dplyr::mutate(extreme.interval = ifelse(interval_size > 10000000,
-#                                               yes = "Over 10 Mb", no = "Under 10 Mb"),
-#                 Simulated = ifelse(Simulated == FALSE, yes = "False-Positive", no = "True-Positive")) %>%
-#   dplyr::group_by(sim, h2, algorithm, Simulated, Simulated.QTL.VarExp, extreme.interval) %>% 
-#   dplyr::summarise(n())
-# 
-# ggplot(noise, mapping = aes(x = h2, y = `n()`, fill = extreme.interval)) + 
-#   theme_bw() + 
-#   # geom_violin(scale = "count") +
-#   geom_point(shape = 21, alpha = 0.25,
-#              position = position_jitterdodge(jitter.width = 0.2)) +
-#   facet_grid(algorithm~.) + 
-#   scale_fill_brewer(palette = "Set1", name = "Interval Length") + 
-#   theme(legend.position = "top",
-#         title = element_text(vjust = 0.5)) + 
-#   labs(title = "Q: Why is power so consistently different across algorithms?",
-#        subtitle = "A: Some algorithms produce large false-positives at greater frequency when only 1 QTL is simulated",
-#        y = "Number of QTL")
-#   
-#   
-```
-
 ```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
 pr.curve <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
-  dplyr::filter(!is.infinite(.threshold))
-ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = h2, colour = h2)) + 
+  dplyr::filter(!is.infinite(.threshold)) %>%
+  dplyr::mutate(nQTL = as.factor(nQTL),
+                h2 = as.numeric(levels(h2))[h2])
+levels(pr.curve$nQTL) <- c("1 Simulated QTL", "5 Simulated QTL")
+
+h2.pal <- wes_palette("BottleRocket2", 7, type = "continuous")
+algorithm.B <- ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = h2, colour = h2)) + 
   theme_bw() + 
   geom_path() +
-  ylim(c(0,1)) + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
-  scale_colour_brewer(palette = "PuOr", name = "Trait Heritability") +
-  facet_grid(nQTL~algorithm, scales = "free", space = "free") +  
+  theme(strip.text = element_text(size = 8),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  theme(legend.position = "top") + 
+  scale_colour_gradientn(colours = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(nQTL~algorithm, scales = "free", space = "free") + 
   labs(x = "Recall", y = "Precision")
+algorithm.B
 ```
 
 ```{r metrics v heritability, echo=FALSE}
@@ -173,7 +156,9 @@ summarized <- power %>%
                 mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
                 median.PVE = `median(Simulated.QTL.VarExp)`*100,
                 sd.PVE = `sd(Simulated.QTL.VarExp)`*100, 
+                nQTL = as.factor(nQTL),
                 .keep = "unused")
+levels(summarized$nQTL) <- c("1 Simulated QTL", "5 Simulated QTL")
 
 
 ## PLOTS
@@ -186,7 +171,7 @@ power.difference.makers <- dat %>%
   tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %>%
   dplyr::mutate(DELTA = `LMM-EXACT-LOCO` - EMMA)
 
-summarized %>%
+algorithm.A <- summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
   ggplot(., mapping = aes(x = h2, y = Power, colour = algorithm)) +
   theme_bw() +
@@ -194,9 +179,22 @@ summarized %>%
   geom_line(aes(group = algorithm)) +
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
   facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
-  labs(title = "Power v. Heritability",
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top") +
+  labs(y = "Power",
        x = expression(italic(h^2)))
+
+
+plots <- cowplot::plot_grid(algorithm.A + theme(legend.position = "none"), 
+                                       algorithm.B + theme(legend.position = "none"), 
+                                       labels = "AUTO", 
+                                       rel_widths = c(0.75, 1), 
+                                       ncol = 2)
+legends <- cowplot::plot_grid(cowplot::get_legend(algorithm.A), 
+                              cowplot::get_legend(algorithm.B), 
+                              ncol = 2, rel_widths = c(1.75,1))
+algorithm.figure <- cowplot::plot_grid(plots, legends, ncol = 1, rel_heights = c(6,1))
+ggsave(algorithm.figure, width = 10, height = 5, filename = "output/prelim.fig.1.png")
 
 summarized %>%
   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
@@ -206,7 +204,7 @@ summarized %>%
   geom_line(aes(group = algorithm)) +
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
   facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
+  # ylim(c(0,1)) + 
   labs(title = "Precision v. Heritability",
        x = expression(italic(h^2)))
 
@@ -218,7 +216,7 @@ summarized %>%
   geom_line(aes(group = algorithm)) +
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
   facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
+  # ylim(c(0,1)) + 
   labs(title = "Precision-Recall AUC v. Heritability",
        x = expression(italic(h^2)))
 
@@ -230,7 +228,7 @@ summarized %>%
   geom_line(aes(group = algorithm)) +
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
   facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
+  # ylim(c(0,1)) + 
   labs(title = "F-score v. Heritability",
        x = expression(italic(h^2)))
 
