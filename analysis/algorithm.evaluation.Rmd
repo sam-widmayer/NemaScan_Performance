@@ -1,5 +1,5 @@
 ---
-title: "All Shapes and Sizes (of QTL Effects) Welcome"
+title: "Exact Linear Mixed Model Approaches are Most Effective for C. elegans GWAS"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -13,12 +13,14 @@ require(nationalparkcolors)
 require(RColorBrewer)
 require(workflowr)
 require(viridis)
+require(wesanderson)
 ```
 
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-setwd("~/Documents/projects/NemaScan_Performance/")
+# setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
+setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Lab Computer
 load(file = "data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData") # EMMA, Algorithm Sims 
 dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
@@ -101,18 +103,18 @@ pr.curve <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
   dplyr::filter(!is.infinite(.threshold)) %>%
-  dplyr::mutate(nQTL = as.factor(nQTL),
-                h2 = as.numeric(levels(h2))[h2])
+  dplyr::mutate(nQTL = as.factor(nQTL))
 levels(pr.curve$nQTL) <- c("1 Simulated QTL", "5 Simulated QTL")
 
-h2.pal <- wes_palette("BottleRocket2", 7, type = "continuous")
+h2.pal <- wes_palette("BottleRocket2", 9, type = "continuous")
 algorithm.B <- ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = h2, colour = h2)) + 
   theme_bw() + 
   geom_path() +
   theme(strip.text = element_text(size = 8),
-        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        panel.grid.minor = element_blank()) +
   theme(legend.position = "top") + 
-  scale_colour_gradientn(colours = h2.pal, name = expression(italic(h^2))) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   facet_grid(nQTL~algorithm, scales = "free", space = "free") + 
   labs(x = "Recall", y = "Precision")
 algorithm.B
@@ -180,7 +182,8 @@ algorithm.A <- summarized %>%
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
   facet_grid(.~nQTL, scales = "free", space = "free") +  
   theme(strip.text = element_text(size = 8),
-        legend.position = "top") +
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
   labs(y = "Power",
        x = expression(italic(h^2)))
 
