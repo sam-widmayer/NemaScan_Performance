@@ -14,6 +14,7 @@ require(RColorBrewer)
 require(workflowr)
 require(viridis)
 require(wesanderson)
+require(data.table)
 ```
 
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
@@ -248,7 +249,7 @@ summarized %>%
        x = expression(italic(h^2)))
 ```
 
-```{r MAF+VE, message=FALSE, warning=FALSE}
+```{r MAF+VE, echo=FALSE, message=FALSE, warning=FALSE}
 MAF.cuts <- seq(0, 1, by = 0.025)
 var.exp.cuts <- seq(0, 1, by = 0.1)
 
@@ -348,4 +349,131 @@ VE.summarized %>%
   labs(title = "Resolution v. QTL VE",
        y = "Mean CI Width",
        x = "VE Bin")
+```
+
+```{r eval=FALSE, include=FALSE}
+EIGEN <- data.table::fread("data/dauer_total_independent_tests.txt") %>%
+  as.numeric()
+dauer.INBRED <- data.table::fread("data/processed_median.dauer.fraction_LMM_EXACT_INBRED_mapping.tsv") %>%
+  dplyr::filter(!duplicated(marker),
+                CHROM != 7) %>%
+  dplyr::mutate(aboveBF = as.numeric(aboveBF),
+                aboveBF = if_else(condition = (aboveBF < 1 & log10p > -log10((0.05/EIGEN))), 
+                                  true = 2, 
+                                  false = aboveBF),
+                CHROM = as.factor(CHROM))
+levels(dauer.INBRED$CHROM) <- c("I","II","III","IV","V","X")
+
+dauer.LOCO <- data.table::fread("data/processed_median.dauer.fraction_LMM_EXACT_LOCO_mapping.tsv") %>%
+  dplyr::filter(!duplicated(marker),
+                CHROM != 7) %>%
+  dplyr::mutate(aboveBF = as.numeric(aboveBF),
+                aboveBF = if_else(condition = (aboveBF < 1 & log10p > -log10((0.05/EIGEN))), 
+                                  true = 2, 
+                                  false = aboveBF),
+                CHROM = as.factor(CHROM))
+levels(dauer.LOCO$CHROM) <- c("I","II","III","IV","V","X")
+
+dauer.EMMA <- data.table::fread("data/median.dauer.fraction_processed_mapping.tsv") %>%
+  dplyr::filter(!duplicated(marker)) %>%
+  dplyr::mutate(aboveBF = as.numeric(aboveBF),
+                aboveBF = if_else(condition = (aboveBF < 1 & log10p > -log10((0.05/EIGEN))), 
+                                  true = 2, 
+                                  false = aboveBF))
+
+man.plot.LOCO <- dauer.LOCO %>%
+  ggplot(.,aes(x = POS/1000000, 
+             y = log10p,
+             colour = as.factor(aboveBF))) + 
+  theme_bw() + 
+  geom_point(size = 1, alpha = 0.5) +
+  scale_colour_manual(values = c("black","red","red")) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,9)) +
+  geom_hline(yintercept = unique(dauer.LOCO$BF), linetype = 2) +
+  geom_hline(yintercept = -log10((0.05/EIGEN)), linetype = 3) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_grid(.~CHROM, scales = "free_x", space = "free")
+
+man.plot.inbred <- dauer.INBRED %>%
+  ggplot(.,aes(x = POS/1000000, 
+             y = log10p,
+             colour = as.factor(aboveBF))) + 
+  theme_bw() + 
+  geom_point(size = 1, alpha = 0.5) +
+  scale_colour_manual(values = c("black","red","red")) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,9)) +
+  geom_hline(yintercept = unique(dauer.INBRED$BF), linetype = 2) +
+  geom_hline(yintercept = -log10((0.05/EIGEN)), linetype = 3) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_grid(.~CHROM, scales = "free_x", space = "free")
+
+man.plot.LOCO <- dauer.LOCO %>%
+  ggplot(.,aes(x = POS/1000000, 
+             y = log10p,
+             colour = as.factor(aboveBF))) + 
+  theme_bw() + 
+  geom_point(size = 1, alpha = 0.5) +
+  scale_colour_manual(values = c("black","red","red")) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,9)) +
+  geom_hline(yintercept = unique(dauer.LOCO$BF), linetype = 2) +
+  geom_hline(yintercept = -log10((0.05/EIGEN)), linetype = 3) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_grid(.~CHROM, scales = "free_x", space = "free")
+
+man.plot.inbred <- dauer.EMMA %>%
+  ggplot(.,aes(x = POS/1000000, 
+             y = log10p,
+             colour = as.factor(aboveBF))) + 
+  theme_bw() + 
+  geom_point(size = 1, alpha = 0.5) +
+  scale_colour_manual(values = c("black","red","red")) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,9)) +
+  geom_hline(yintercept = unique(dauer.EMMA$BF), linetype = 2) +
+  geom_hline(yintercept = -log10((0.05/EIGEN)), linetype = 3) +
+  labs(x = "Genomic position (Mb)",
+       y = expression(-log[10](italic(p)))) +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_grid(.~CHROM, scales = "free_x", space = "free")
+
+power.plot <- summarized %>%
+  dplyr::filter(algorithm == "EMMA",
+                nQTL == "1 Simulated QTL") %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = Power)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line() +
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
+  labs(y = "Power",
+       x = expression(italic(h^2)))
+
+WB.plots <- cowplot::plot_grid(power.plot,
+                               man.plot,
+                               labels = "AUTO", 
+                               rel_widths = c(1.5, 4),
+                               align = "h", axis = "b",
+                               ncol = 2)
+ggsave(WB.plots, width = 7.5, height = 2.5, filename = "output/WB.figure.png")
+
+cowplot::plot_grid(man.plot.inbred, man.plot.LOCO, ncol = 1)
 ```
