@@ -1,5 +1,5 @@
 ---
-title: "Exact Linear Mixed Model Approaches are Most Effective for C. elegans GWAS"
+title: "Polygenic Architectures are Difficult to Resolve Using GWAS"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
