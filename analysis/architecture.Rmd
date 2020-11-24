@@ -66,6 +66,7 @@ dat$nQTL <- factor(dat$nQTL, levels = c("1","5","10","25"))
 ```{r simulated QTL locations, echo=FALSE}
 h2.pal <- wes_palette("Darjeeling1", 4)[c(1,4,3,2)]
 nQTL.pal <- wes_palette("Darjeeling2", 4)[c(3,1,4,2)]
+options(dplyr.summarise.inform = FALSE)
 dat %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL)) %>%
@@ -179,6 +180,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = nQTL, colour =
 ```
 
 ```{r metrics v heritability, echo=FALSE}
+options(dplyr.summarise.inform = FALSE)
 power <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
