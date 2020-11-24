@@ -105,6 +105,55 @@ dat %>%
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
 
+
+unique.hits <- dat %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::group_by(nQTL, h2, Rep, algorithm) %>%
+  tidyr::nest()
+
+unique.hits.calc <- function(nQTL, Rep, h2, algorithm, data){
+  check <- strsplit(data$sim, split = "_")[[1]]
+  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
+  data %>%
+    dplyr::mutate(n_unique_hits = length(unique(as.factor(data$peak_id))), 
+                  nQTL = nQTL, h2 = h2, Rep = Rep, algorithm = algorithm) %>%
+    dplyr::select(nQTL, h2, Rep, algorithm, n_unique_hits) %>%
+    dplyr::filter(!duplicated(.))
+}
+unique.hits.dat <- purrr::pmap(.l = list(unique.hits$nQTL,
+                      unique.hits$Rep,
+                      unique.hits$h2,
+                      unique.hits$algorithm,
+                      unique.hits$data),
+            .f = unique.hits.calc) %>%
+  Reduce(rbind,.)
+
+unique.hits.dat %>%
+  dplyr::group_by(nQTL, h2, algorithm) %>%
+  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
+  `colnames<-`(c("nQTL","h2","algorithm","mean","sd")) %>%
+  tidyr::unite("unique_hits", mean:sd, sep = " ± ") %>%
+  tidyr::pivot_wider(names_from = nQTL, values_from = unique_hits)
+
+unique.hits.plot <- unique.hits.dat %>%
+  dplyr::group_by(nQTL, h2, algorithm) %>%
+  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
+  `colnames<-`(c("nQTL","h2","algorithm","mean","sd")) %>%
+  ggplot(., mapping = aes(x = h2, y = mean, colour = nQTL)) + 
+  theme_bw() +
+  geom_point(position = position_dodge(width = 0.5)) +
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), 
+                position=position_dodge(width=0.5)) +
+  scale_colour_manual(values = nQTL.pal, name = "Number of Supporting QTL") +
+  facet_grid(algorithm~.) +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) + 
+  scale_y_continuous(breaks = seq(0,6,1)) + 
+  labs(x = expression(italic(h^2)),
+       y = "Unique Detection Intervals")
+
+
 unique.true.positives <- dat %>%
   dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
   dplyr::group_by(nQTL, h2, Rep, algorithm) %>%
@@ -121,7 +170,6 @@ unique.peak.calc <- function(nQTL, Rep, h2, algorithm, data){
     as.vector() %>%
     dplyr::mutate(nQTL = nQTL, h2 = h2, Rep = Rep, algorithm = algorithm)
 }
-
 unique.true.positives.dat <- purrr::pmap(.l = list(unique.true.positives$nQTL,
                       unique.true.positives$Rep,
                       unique.true.positives$h2,
@@ -130,14 +178,12 @@ unique.true.positives.dat <- purrr::pmap(.l = list(unique.true.positives$nQTL,
             .f = unique.peak.calc) %>%
   Reduce(rbind,.)
 
-
-
 totals <- unique.true.positives.dat %>%
   dplyr::rename(QTL_per_peak = `n()`) %>%
   dplyr::group_by(h2, algorithm) %>%
   dplyr::summarise(n())
 
-unique.true.positives.dat %>%
+QTL_per_peak_plot <- unique.true.positives.dat %>%
   dplyr::mutate(QTL_per_peak = as.numeric(`n()`)) %>%
   dplyr::group_by(nQTL, h2, algorithm, QTL_per_peak) %>%
   dplyr::summarise(n()) %>%
@@ -174,12 +220,12 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = nQTL, colour =
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
         panel.grid.minor = element_blank()) +
   theme(legend.position = "top") + 
-  scale_colour_brewer(palette = "OrRd", name = "Number of QTL") +
+  scale_colour_brewer(palette = "OrRd", name = "Number of Supporting QTL") +
   facet_grid(h2~algorithm) + 
   labs(x = "Recall", y = "Precision")
 ```
 
-```{r metrics v heritability, echo=FALSE}
+```{r metrics v nQTL, echo=FALSE}
 options(dplyr.summarise.inform = FALSE)
 power <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
@@ -218,7 +264,7 @@ summarized <- power %>%
                 .keep = "unused")
 
 ## PLOTS
-summarized %>%
+power.plot <- summarized %>%
   ggplot(., mapping = aes(x = nQTL, y = Power, colour = h2)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
@@ -228,9 +274,9 @@ summarized %>%
   theme(strip.text = element_text(size = 8),
         legend.position = "top", 
         panel.grid.minor = element_blank()) +
-  labs(x = "Number of QTL")
+  labs(x = "Number of Supporting QTL")
 
-summarized %>%
+precision.plot <- summarized %>%
   ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
@@ -240,7 +286,7 @@ summarized %>%
   theme(strip.text = element_text(size = 8),
         legend.position = "top", 
         panel.grid.minor = element_blank()) +
-  labs(x = "Number of QTL")
+  labs(x = "Number of Supporting QTL")
 
 summarized %>%
   ggplot(., mapping = aes(x = nQTL, y = `Precision-Recall_AUC`, colour = h2)) +
@@ -253,26 +299,62 @@ summarized %>%
         legend.position = "top", 
         panel.grid.minor = element_blank()) +
   ylim(c(0.8,1)) + 
-  labs(x = "Number of QTL")
+  labs(x = "Number of Supporting QTL")
 
 summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = F1score, colour = nQTL)) +
+  # dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = nQTL, y = F1score, colour = h2)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = nQTL)) +
+  geom_line(aes(group = h2)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   facet_grid(.~algorithm, scales = "free", space = "free") +   
-  labs(x = expression(italic(h^2)))
+  labs(x = "Number of Supporting QTL")
 
 summarized %>%
-  ggplot(., mapping = aes(x = h2, y = FPR, colour = nQTL)) +
+  ggplot(., mapping = aes(x = nQTL, y = FPR, colour = h2)) +
   theme_bw() +
   geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = nQTL)) +
+  geom_line(aes(group = h2)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   facet_grid(.~algorithm, scales = "free", space = "free") +   
   ylim(c(0,1)) + 
-  labs(x = expression(italic(h^2)))
+  labs(x = "Number of Supporting QTL")
+
+plots <- cowplot::plot_grid(power.plot+ theme(legend.position = "none"),
+                            precision.plot+ theme(legend.position = "none"),
+                            unique.hits.plot + theme(legend.position = "none"), 
+                            QTL_per_peak_plot + theme(legend.position = "none"),
+                            nrow = 2,
+                            labels = "AUTO", align = "hv", axis = "b")
+nQTL.legend <- cowplot::get_legend(QTL_per_peak_plot)
+h2.legend <- cowplot::get_legend(power.plot)
+legends <- cowplot::plot_grid(h2.legend, nQTL.legend, ncol = 1)
+prelim.fig.2 <- cowplot::plot_grid(plots, 
+                                   legends, 
+                                   ncol = 1, 
+                                   rel_heights = c(6,1))
+ggsave(plot = prelim.fig.2, filename = "output/prelim.fig.2.png", height = 8, width = 10)
+```
+
+```{r}
+options(dplyr.summarise.inform = FALSE)
+dat %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power") %>%
+  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %>%
+  dplyr::arrange(nQTL) %>%
+  dplyr::select(-.metric, -.estimator) %>%
+  dplyr::mutate(LOCO.PLUSMINUS = (`LMM-EXACT-LOCO`-`LMM-EXACT-INBRED`))
+dat %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision") %>%
+  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %>%
+  dplyr::arrange(nQTL) %>%
+  dplyr::select(-.metric, -.estimator) %>%
+  dplyr::mutate(INBRED.PLUSMINUS = (`LMM-EXACT-INBRED`-`LMM-EXACT-LOCO`))
+
 
 ```
