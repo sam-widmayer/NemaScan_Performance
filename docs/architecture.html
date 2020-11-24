@@ -459,16 +459,16 @@ relative
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreeb6ccbbf8f25af40a7fdab34e64d867b1af20f9actargetblankb6ccbbfa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/b6ccbbf8f25af40a7fdab34e64d867b1af20f9ac" target="_blank">b6ccbbf</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree385b5cbb02ca682a4e03d95e43e97ee7f291f4d9targetblank385b5cba"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/385b5cbb02ca682a4e03d95e43e97ee7f291f4d9" target="_blank">385b5cb</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreeb6ccbbf8f25af40a7fdab34e64d867b1af20f9actargetblankb6ccbbfa" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree385b5cbb02ca682a4e03d95e43e97ee7f291f4d9targetblank385b5cba" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/b6ccbbf8f25af40a7fdab34e64d867b1af20f9ac" target="_blank">b6ccbbf</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/385b5cbb02ca682a4e03d95e43e97ee7f291f4d9" target="_blank">385b5cb</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -490,7 +490,12 @@ Untracked files:
     Untracked:  data/processed_median.dauer.fraction_LMM_EXACT_INBRED_mapping.tsv
     Untracked:  data/processed_median.dauer.fraction_LMM_EXACT_LOCO_mapping.tsv
     Untracked:  output/WB.figure.png
+    Untracked:  output/pr.curve.variant.set.png
     Untracked:  output/prelim.fig.1.png
+    Untracked:  output/prelim.fig.2.png
+
+Unstaged changes:
+    Modified:   analysis/variant.set.comp.Rmd
 
 </code></pre>
 <p>
@@ -529,6 +534,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/385b5cbb02ca682a4e03d95e43e97ee7f291f4d9/analysis/architecture.Rmd" target="_blank">385b5cb</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+<td>
+prelim figures
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/sam-widmayer/NemaScan_Performance/a07596f57a8cbd1751a9031ed99607b0312adcb9/docs/architecture.html" target="_blank">a07596f</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -731,45 +770,19 @@ Sam
 </table>
 </div>
 </div>
+<pre><code># A tibble: 8 x 6
+# Groups:   h2 [4]
+  h2    algorithm        `1`         `5`         `10`        `25`       
+  &lt;fct&gt; &lt;chr&gt;            &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;      
+1 0.2   LMM-EXACT-INBRED 1.48 ± 1.32 1.29 ± 0.8  1.83 ± 1.75 2.05 ± 1.99
+2 0.2   LMM-EXACT-LOCO   1.21 ± 0.46 1.27 ± 0.54 1.28 ± 0.68 1.12 ± 0.33
+3 0.4   LMM-EXACT-INBRED 1.34 ± 0.98 1.56 ± 1.03 1.73 ± 0.74 1.61 ± 0.78
+4 0.4   LMM-EXACT-LOCO   1.87 ± 1.58 1.94 ± 1.34 2.02 ± 1.01 1.95 ± 1.01
+5 0.6   LMM-EXACT-INBRED 1.92 ± 1.89 2.14 ± 1.65 2.15 ± 1.06 2.21 ± 1.24
+6 0.6   LMM-EXACT-LOCO   2.76 ± 2.55 2.66 ± 1.82 2.8 ± 1.43  2.59 ± 1.29
+7 0.8   LMM-EXACT-INBRED 2.33 ± 2.16 2.51 ± 1.83 2.68 ± 1.38 2.95 ± 1.75
+8 0.8   LMM-EXACT-LOCO   3.45 ± 2.86 3.2 ± 1.89  3.22 ± 1.63 3.44 ± 1.71</code></pre>
 <pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;)</code></pre>
-<p><img src="figure/architecture.Rmd/simulated%20QTL%20locations-4.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-simulated-QTL-locations-4">
-Past versions of “simulated QTL locations-4.png”
-</button>
-</p>
-<div id="fig-no-spaces-simulated-QTL-locations-4" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/simulated QTL locations-4.png" target="_blank">d4f1563</a>
-</td>
-<td>
-Sam
-</td>
-<td>
-2020-11-24
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
 <p><img src="figure/architecture.Rmd/PR%20curve-1.png" width="864" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-PR-curve-1">
@@ -811,196 +824,62 @@ Sam
 <pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)
 Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)</code></pre>
 <pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;)</code></pre>
-<p><img src="figure/architecture.Rmd/metrics%20v%20heritability-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-heritability-1">
-Past versions of “metrics v heritability-1.png”
-</button>
-</p>
-<div id="fig-no-spaces-metrics-v-heritability-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/metrics v heritability-1.png" target="_blank">d4f1563</a>
-</td>
-<td>
-Sam
-</td>
-<td>
-2020-11-24
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><img src="figure/architecture.Rmd/metrics%20v%20heritability-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-heritability-2">
-Past versions of “metrics v heritability-2.png”
-</button>
-</p>
-<div id="fig-no-spaces-metrics-v-heritability-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/metrics v heritability-2.png" target="_blank">d4f1563</a>
-</td>
-<td>
-Sam
-</td>
-<td>
-2020-11-24
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><img src="figure/architecture.Rmd/metrics%20v%20heritability-3.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-heritability-3">
-Past versions of “metrics v heritability-3.png”
-</button>
-</p>
-<div id="fig-no-spaces-metrics-v-heritability-3" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/metrics v heritability-3.png" target="_blank">d4f1563</a>
-</td>
-<td>
-Sam
-</td>
-<td>
-2020-11-24
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><img src="figure/architecture.Rmd/metrics%20v%20heritability-4.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-heritability-4">
-Past versions of “metrics v heritability-4.png”
-</button>
-</p>
-<div id="fig-no-spaces-metrics-v-heritability-4" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/metrics v heritability-4.png" target="_blank">d4f1563</a>
-</td>
-<td>
-Sam
-</td>
-<td>
-2020-11-24
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><img src="figure/architecture.Rmd/metrics%20v%20heritability-5.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-heritability-5">
-Past versions of “metrics v heritability-5.png”
-</button>
-</p>
-<div id="fig-no-spaces-metrics-v-heritability-5" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/metrics v heritability-5.png" target="_blank">d4f1563</a>
-</td>
-<td>
-Sam
-</td>
-<td>
-2020-11-24
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/architecture.Rmd/metrics%20v%20nQTL-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/architecture.Rmd/metrics%20v%20nQTL-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/architecture.Rmd/metrics%20v%20nQTL-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>options(dplyr.summarise.inform = FALSE)
+dat %&gt;%
+  dplyr::group_by(h2, algorithm, nQTL) %&gt;%
+  yardstick::sens(truth = Simulated, estimate = Detected) %&gt;%
+  dplyr::mutate(.metric = &quot;Power&quot;) %&gt;%
+  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %&gt;%
+  dplyr::arrange(nQTL) %&gt;%
+  dplyr::select(-.metric, -.estimator) %&gt;%
+  dplyr::mutate(LOCO.PLUSMINUS = (`LMM-EXACT-LOCO`-`LMM-EXACT-INBRED`))</code></pre>
+<pre><code># A tibble: 16 x 5
+   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` LOCO.PLUSMINUS
+   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt;          &lt;dbl&gt;
+ 1 0.2   1                 0.7              0.79           0.09  
+ 2 0.4   1                 0.818            0.909          0.0909
+ 3 0.6   1                 0.88             1              0.12  
+ 4 0.8   1                 0.88             1              0.12  
+ 5 0.2   5                 0.198            0.220          0.0220
+ 6 0.4   5                 0.275            0.353          0.0782
+ 7 0.6   5                 0.335            0.451          0.116 
+ 8 0.8   5                 0.415            0.555          0.140 
+ 9 0.2   10                0.139            0.111         -0.0281
+10 0.4   10                0.178            0.224          0.0461
+11 0.6   10                0.231            0.322          0.0913
+12 0.8   10                0.290            0.406          0.116 
+13 0.2   25                0.0984           0.0510        -0.0474
+14 0.4   25                0.0859           0.134          0.0482
+15 0.6   25                0.130            0.207          0.0767
+16 0.8   25                0.177            0.290          0.113 </code></pre>
+<pre class="r"><code>dat %&gt;%
+  dplyr::group_by(h2, algorithm, nQTL) %&gt;%
+  yardstick::precision(truth = Simulated, estimate = Detected) %&gt;%
+  dplyr::mutate(.metric = &quot;Precision&quot;) %&gt;%
+  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %&gt;%
+  dplyr::arrange(nQTL) %&gt;%
+  dplyr::select(-.metric, -.estimator) %&gt;%
+  dplyr::mutate(INBRED.PLUSMINUS = (`LMM-EXACT-INBRED`-`LMM-EXACT-LOCO`))</code></pre>
+<pre><code># A tibble: 16 x 5
+   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` INBRED.PLUSMINUS
+   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+ 1 0.2   1                  0.667            0.798        -0.131   
+ 2 0.4   1                  0.736            0.517         0.219   
+ 3 0.6   1                  0.521            0.362         0.158   
+ 4 0.8   1                  0.429            0.290         0.139   
+ 5 0.2   5                  0.868            0.894        -0.0259  
+ 6 0.4   5                  0.890            0.815         0.0748  
+ 7 0.6   5                  0.749            0.719         0.0300  
+ 8 0.8   5                  0.745            0.718         0.0270  
+ 9 0.2   10                 0.848            0.895        -0.0476  
+10 0.4   10                 0.927            0.868         0.0590  
+11 0.6   10                 0.898            0.863         0.0355  
+12 0.8   10                 0.873            0.879        -0.00541 
+13 0.2   25                 0.932            0.977        -0.0454  
+14 0.4   25                 0.955            0.965        -0.00996 
+15 0.6   25                 0.964            0.964        -0.000134
+16 0.8   25                 0.932            0.955        -0.0228  </code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1054,9 +933,10 @@ loaded via a namespace (and not attached):
 [61] cowplot_1.1.0      tidyselect_1.1.0   plyr_1.8.6         magrittr_2.0.1    
 [65] R6_2.5.0           generics_0.1.0     DBI_1.1.0          pillar_1.4.7      
 [69] haven_2.3.1        whisker_0.4        withr_2.3.0        survival_3.2-3    
-[73] nnet_7.3-14        modelr_0.1.8       crayon_1.3.4       rmarkdown_2.5     
-[77] grid_3.6.3         readxl_1.3.1       git2r_0.27.1       reprex_0.3.0      
-[81] digest_0.6.27      httpuv_1.5.4       munsell_0.5.0      GPfit_1.0-8       </code></pre>
+[73] nnet_7.3-14        modelr_0.1.8       crayon_1.3.4       utf8_1.1.4        
+[77] rmarkdown_2.5      grid_3.6.3         readxl_1.3.1       git2r_0.27.1      
+[81] reprex_0.3.0       digest_0.6.27      httpuv_1.5.4       munsell_0.5.0     
+[85] GPfit_1.0-8       </code></pre>
 </div>
 </div>
 
