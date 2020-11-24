@@ -1,0 +1,276 @@
+---
+title: "Exact Linear Mixed Model Approaches are Most Effective for C. elegans GWAS"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+require(RColorBrewer)
+require(workflowr)
+require(viridis)
+require(wesanderson)
+require(data.table)
+require(gg.gap)
+```
+
+### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
+setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Lab Computer
+load(file = "data/NemaScan_Performance.Architecture.20201120.RData") # Architecture Sims
+dat <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp), # watch
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)
+                #, algorithm = if_else(condition = algorithm == "EMMA",
+                #                     true = "EMMAx",
+                #                     false = algorithm)
+                ) %>%
+  dplyr::filter(!algorithm %in% c("No Successful Mappings"),
+                CHROM != 7)
+dat$nQTL <- factor(dat$nQTL, levels = c("1","5","10","25"))
+
+```
+
+### NemaScan simulation performance was assessed with the following experimental parameters:
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
+* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
+* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
+* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+
+```{r simulated QTL locations, echo=FALSE}
+h2.pal <- wes_palette("Darjeeling1", 4)[c(1,4,3,2)]
+nQTL.pal <- wes_palette("Darjeeling2", 4)[c(3,1,4,2)]
+dat %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = nQTL)) + 
+  theme_bw() + 
+  geom_point(shape = 21, alpha = 0.75) + 
+  facet_grid(.~CHROM, drop = TRUE, scales = "free") + 
+  scale_fill_manual(values = nQTL.pal) + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL)) %>%
+  ggplot(., mapping = aes(x = Frequency, fill = nQTL)) +
+  theme_bw() + 
+  geom_density() + 
+  theme(legend.position = "top") + 
+      facet_grid(nQTL~CHROM, drop = TRUE, scales = "free") + 
+  scale_fill_manual(values = nQTL.pal) + 
+  xlim(c(0.05,0.5)) + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL)) %>%
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp, fill = nQTL)) +
+  theme_bw() + 
+  geom_density() + 
+  theme(legend.position = "top") + 
+      facet_grid(nQTL~CHROM, drop = TRUE) + 
+  scale_fill_manual(values = nQTL.pal) + 
+  labs(x = "Variance Explained by Simulated QTL",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+
+unique.true.positives <- dat %>%
+  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
+  dplyr::group_by(nQTL, h2, Rep, algorithm) %>%
+  tidyr::nest()
+
+unique.peak.calc <- function(nQTL, Rep, h2, algorithm, data){
+  check <- strsplit(data$sim, split = "_")[[1]]
+  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
+  data %>%
+    dplyr::mutate(peak_id = as.factor(peak_id)) %>%
+    dplyr::group_by(peak_id) %>%
+    dplyr::summarise(n()) %>%
+    dplyr::select(`n()`) %>%
+    as.vector() %>%
+    dplyr::mutate(nQTL = nQTL, h2 = h2, Rep = Rep, algorithm = algorithm)
+}
+
+unique.true.positives.dat <- purrr::pmap(.l = list(unique.true.positives$nQTL,
+                      unique.true.positives$Rep,
+                      unique.true.positives$h2,
+                      unique.true.positives$algorithm,
+                      unique.true.positives$data),
+            .f = unique.peak.calc) %>%
+  Reduce(rbind,.)
+
+
+
+totals <- unique.true.positives.dat %>%
+  dplyr::rename(QTL_per_peak = `n()`) %>%
+  dplyr::group_by(h2, algorithm) %>%
+  dplyr::summarise(n())
+
+unique.true.positives.dat %>%
+  dplyr::mutate(QTL_per_peak = as.numeric(`n()`)) %>%
+  dplyr::group_by(nQTL, h2, algorithm, QTL_per_peak) %>%
+  dplyr::summarise(n()) %>%
+  dplyr::rename(freq = `n()`) %>%
+  dplyr::full_join(.,totals) %>%
+  dplyr::mutate(pct = (freq/`n()`)*100) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(QTL_per_peak = if_else(condition = (QTL_per_peak > 4),
+                                       true = "5+",
+                                       false = as.character(QTL_per_peak))) %>%
+  ggplot(., mapping = aes(x = QTL_per_peak, y = pct, fill = nQTL)) +
+  theme_bw() +
+  geom_col(position = "stack") + 
+  scale_fill_manual(values = nQTL.pal, name = "Number of Supporting QTL") +
+  facet_grid(algorithm~h2) +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
+  labs(x = "Simulated QTL per Unique True Positive Detection Interval",
+       y = "Simulated Regimes (%)")
+```
+
+```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
+pr.curve <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  yardstick::pr_curve(Simulated, log10p) %>%
+  dplyr::filter(!is.infinite(.threshold))
+
+
+ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = nQTL, colour = nQTL)) + 
+  theme_bw() + 
+  geom_path() +
+  theme(strip.text = element_text(size = 8),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        panel.grid.minor = element_blank()) +
+  theme(legend.position = "top") + 
+  scale_colour_brewer(palette = "OrRd", name = "Number of QTL") +
+  facet_grid(h2~algorithm) + 
+  labs(x = "Recall", y = "Precision")
+```
+
+```{r metrics v heritability, echo=FALSE}
+power <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+precision <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+pr_auc <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "Precision-Recall_AUC")
+resolution <- dat %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL) %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
+
+summarized <- power %>%
+  dplyr::full_join(., precision) %>%
+  dplyr::full_join(., pr_auc) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+                FPR = 1-Precision) %>%
+  dplyr::left_join(.,resolution) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100, 
+                nQTL = as.factor(nQTL),
+                .keep = "unused")
+
+## PLOTS
+summarized %>%
+  ggplot(., mapping = aes(x = nQTL, y = Power, colour = h2)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = h2)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~algorithm, scales = "free", space = "free") +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
+  labs(x = "Number of QTL")
+
+summarized %>%
+  ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = h2)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~algorithm, scales = "free", space = "free") +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
+  labs(x = "Number of QTL")
+
+summarized %>%
+  ggplot(., mapping = aes(x = nQTL, y = `Precision-Recall_AUC`, colour = h2)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = h2)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~algorithm, scales = "free", space = "free") +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
+  ylim(c(0.8,1)) + 
+  labs(x = "Number of QTL")
+
+summarized %>%
+  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
+  ggplot(., mapping = aes(x = h2, y = F1score, colour = nQTL)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = nQTL)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~algorithm, scales = "free", space = "free") +   
+  labs(x = expression(italic(h^2)))
+
+summarized %>%
+  ggplot(., mapping = aes(x = h2, y = FPR, colour = nQTL)) +
+  theme_bw() +
+  geom_jitter(width = 0.01, height = 0) +
+  geom_line(aes(group = nQTL)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~algorithm, scales = "free", space = "free") +   
+  ylim(c(0,1)) + 
+  labs(x = expression(italic(h^2)))
+
+```
