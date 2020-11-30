@@ -11,20 +11,22 @@ editor_options:
   chunk_output_type: console
 ---
 
----
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
 require(tidyverse)
 require(tidymodels)
 require(nationalparkcolors)
 require(RColorBrewer)
 require(GenomicRanges)
+require(workflowr)
+require(cowplot)
+require(wesanderson)
 ```
 
 Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-setwd("~/Documents/projects/NemaScan_Performance/")
-
+# setwd("~/Documents/projects/NemaScan_Performance/")
+setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 # Load Hard-Filtered Simulations
 load("data/NemaScan_Performance.Variant.Set.HF.chr125.20201112.RData")
 hard.filtered <- simulation.metrics.df %>%
@@ -92,89 +94,10 @@ imputed <- simulation.metrics.df %>%
   dplyr::filter(algorithm %in% c("LMM-EXACT-INBRED","LMM-EXACT-LOCO")) %>%
   dplyr::mutate(variant.set = "imputed")
 
-
-
-# Divergent Regions
-common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
-  dplyr::mutate(chr = as.factor(chr))
-levels(common.divergent.regions$chr) <- c("1","2","3","4","5","6")
-div.regions.gr <- GenomicRanges::GRanges(seqnames = common.divergent.regions$chr, 
-                                         ranges = IRanges(start = common.divergent.regions$start, 
-                                                          end = common.divergent.regions$stop))
-
-# Finding Divergent QTLs: Hard-Filtered VCF Simulations
-hf.pos.gr <- GenomicRanges::GRanges(seqnames = hard.filtered$CHROM, 
-                                 ranges = IRanges(start = hard.filtered$POS, 
-                                                  end = hard.filtered$POS),
-                                 QTL = hard.filtered$QTL)
-
-hf.interval.gr <- GenomicRanges::GRanges(seqnames = hard.filtered$CHROM, 
-                                 ranges = IRanges(start = hard.filtered$startPOS, 
-                                                  end = hard.filtered$endPOS),
-                                 QTL = hard.filtered$QTL)
-
-hf.divergent.markers <- IRanges::findOverlapPairs(hf.pos.gr, div.regions.gr) %>%
-  data.frame() %>%
-  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
-  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
-
-hf.divergent.intervals <- IRanges::findOverlapPairs(hf.interval.gr, div.regions.gr) %>%
-  data.frame() %>%
-  dplyr::select(first.QTL, first.X.seqnames, first.X.start, first.X.end, second.start, second.end) %>%
-  `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
-
-
-# Finding Divergent QTLs: Imputed VCF Simulations
-imputed.pos.gr <- GenomicRanges::GRanges(seqnames = imputed$CHROM, 
-                                 ranges = IRanges(start = imputed$POS, 
-                                                  end = imputed$POS),
-                                 QTL = imputed$QTL)
-
-imputed.interval.gr <- GenomicRanges::GRanges(seqnames = imputed$CHROM, 
-                                 ranges = IRanges(start = imputed$startPOS, 
-                                                  end = imputed$endPOS),
-                                 QTL = imputed$QTL)
-
-imputed.divergent.markers <- IRanges::findOverlapPairs(imputed.pos.gr, div.regions.gr) %>%
-  data.frame() %>%
-  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
-  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
-
-imputed.divergent.intervals <- IRanges::findOverlapPairs(imputed.interval.gr, div.regions.gr) %>%
-  data.frame() %>%
-  dplyr::select(first.QTL, first.X.seqnames, first.X.start, first.X.end, second.start, second.end) %>%
-  `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
-
-
-# Classifying
-hard.filtered.div.df <- hard.filtered %>%
-  dplyr::mutate(divergent.pos = ifelse(test = QTL %in% hf.divergent.markers$QTL, 
-                                   yes = "Divergent Marker", 
-                                   no = "Non-Divergent Marker"),
-                divergent.interval = ifelse(test = QTL %in% hf.divergent.intervals$QTL, 
-                                   yes = "Divergent Interval", 
-                                   no = "Non-Divergent Interval"),
-                detected = ifelse(test = Detected == TRUE, 
-                                  yes = "Detected",
-                                  no = "Not Detected"))
-
-imputed.div.df <- imputed %>%
-  dplyr::mutate(divergent.pos = ifelse(test = QTL %in% imputed.divergent.markers$QTL, 
-                                   yes = "Divergent Marker", 
-                                   no = "Non-Divergent Marker"),
-                divergent.interval = ifelse(test = QTL %in% imputed.divergent.intervals$QTL, 
-                                   yes = "Divergent Interval", 
-                                   no = "Non-Divergent Interval"),
-                detected = ifelse(test = Detected == TRUE, 
-                                  yes = "Detected",
-                                  no = "Not Detected"))
-
-dat <- imputed.div.df %>%
-  dplyr::full_join(hard.filtered.div.df)
-
-poop<- dat %>%
-  dplyr::group_by(h2, algorithm, variant.set, divergent.pos, Simulated, Detected) %>%
-  dplyr::summarise(n())
+dat <- imputed %>%
+  dplyr::full_join(hard.filtered) %>%
+  dplyr::mutate(variant.set = as.factor(variant.set))
+levels(dat$variant.set) <- c("Hard-Filtered","Imputed")
 ```
 
 
@@ -197,11 +120,11 @@ dat %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL)) %>%
   dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = divergent.pos)) + 
+  ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = variant.set)) + 
   theme_bw() + 
   geom_point(shape = 21) + 
-  scale_fill_manual(values = nationalparkcolors::park_palettes$Arches[c(3,1)], name = "Divergence") +
-  facet_grid(variant.set~CHROM, drop = TRUE, scales = "free", space = "free") + 
+scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+  facet_grid(.~CHROM, drop = TRUE, scales = "free", space = "free") + 
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect",
        title = "Where were QTL simulated?")
@@ -224,7 +147,7 @@ dat %>%
   ggplot(., mapping = aes(x = abs(Effect), fill = variant.set)) +
   theme_bw() + 
   geom_density(alpha = 0.6) + 
-  scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") + 
+scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(2,4)], name = "Variant Set") +  
   theme(legend.position = "top") + 
   labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
@@ -234,20 +157,20 @@ dat %>%
 
 ```{r power precision resolution, echo=FALSE}
 power <- dat %>%
-  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
+  dplyr::group_by(h2, variant.set, algorithm) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power")
 
 precision <- dat %>%
-  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
+  dplyr::group_by(h2, variant.set, algorithm) %>%
   yardstick::precision(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Precision")
 
 resolution <- dat %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, variant.set, divergent.pos) %>%
-  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, variant.set) %>%
+  dplyr::group_by(h2, variant.set, algorithm) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
                    mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
 
@@ -266,16 +189,19 @@ summarized <- power %>%
 
 ```{r pr curve, echo=FALSE}
 # CAVEAT: TNR = 0, CIs are relevant and we don't want to exclude tagged variants
-dat %>%
-  dplyr::group_by(h2, variant.set, divergent.pos, algorithm) %>%
+h2.pal <- wes_palette("BottleRocket2", 3)
+pr.curve.plot <- dat %>%
+  dplyr::group_by(h2, variant.set, algorithm) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
   ggplot(., mapping = aes(x = recall, y = precision, group = h2, colour = h2)) + 
   theme_bw() + 
   geom_path() +
-  scale_colour_brewer(palette = "RdPu", name = "Trait Heritability") +
-  facet_grid(variant.set~divergent.pos, scales = "free", space = "free") +
-  ylim(c(0,1)) + 
+  theme(legend.position = "bottom",
+        panel.grid.minor = element_blank()) + 
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(variant.set~algorithm) +
   labs(x = "Recall", y = "Precision")
+ggsave(pr.curve.plot, filename = "output/pr.curve.variant.set.png", width = 5.5, height = 5.5)
 ```
 
 ### Mapping Performance with Imputed Variants vs. Hard-Filtered Variants
@@ -318,7 +244,6 @@ summarized %>%
 
 
 ## Divergent Regions and False-Positives
-
 ```{r divergent region breakdown, echo=FALSE}
 dat %>%
   dplyr::filter(Simulated == TRUE) %>% 
@@ -408,6 +333,83 @@ closest.FP.nested <- purrr::pmap(.l = list(reps$data,
 closest.FP.df <- do.call(rbind, closest.FP.nested)
 ```
 
+```{r eval=FALSE, include=FALSE}
+# Divergent Regions
+common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
+  dplyr::mutate(chr = as.factor(chr))
+levels(common.divergent.regions$chr) <- c("1","2","3","4","5","6")
+div.regions.gr <- GenomicRanges::GRanges(seqnames = common.divergent.regions$chr, 
+                                         ranges = IRanges(start = common.divergent.regions$start, 
+                                                          end = common.divergent.regions$stop))
+
+# Finding Divergent QTLs: Hard-Filtered VCF Simulations
+hf.pos.gr <- GenomicRanges::GRanges(seqnames = hard.filtered$CHROM, 
+                                 ranges = IRanges(start = hard.filtered$POS, 
+                                                  end = hard.filtered$POS),
+                                 QTL = hard.filtered$QTL)
+
+hf.interval.gr <- GenomicRanges::GRanges(seqnames = hard.filtered$CHROM, 
+                                 ranges = IRanges(start = hard.filtered$startPOS, 
+                                                  end = hard.filtered$endPOS),
+                                 QTL = hard.filtered$QTL)
+
+hf.divergent.markers <- IRanges::findOverlapPairs(hf.pos.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+hf.divergent.intervals <- IRanges::findOverlapPairs(hf.interval.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, first.X.end, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
+
+
+# Finding Divergent QTLs: Imputed VCF Simulations
+imputed.pos.gr <- GenomicRanges::GRanges(seqnames = imputed$CHROM, 
+                                 ranges = IRanges(start = imputed$POS, 
+                                                  end = imputed$POS),
+                                 QTL = imputed$QTL)
+
+imputed.interval.gr <- GenomicRanges::GRanges(seqnames = imputed$CHROM, 
+                                 ranges = IRanges(start = imputed$startPOS, 
+                                                  end = imputed$endPOS),
+                                 QTL = imputed$QTL)
+
+imputed.divergent.markers <- IRanges::findOverlapPairs(imputed.pos.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","POS","div.start","div.end"))
+
+imputed.divergent.intervals <- IRanges::findOverlapPairs(imputed.interval.gr, div.regions.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames, first.X.start, first.X.end, second.start, second.end) %>%
+  `colnames<-`(c("QTL","CHROM","startPOS","endPOS","div.start","div.end"))
+
+
+# Classifying
+hard.filtered.div.df <- hard.filtered %>%
+  dplyr::mutate(divergent.pos = ifelse(test = QTL %in% hf.divergent.markers$QTL, 
+                                   yes = "Divergent Marker", 
+                                   no = "Non-Divergent Marker"),
+                divergent.interval = ifelse(test = QTL %in% hf.divergent.intervals$QTL, 
+                                   yes = "Divergent Interval", 
+                                   no = "Non-Divergent Interval"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected"))
+
+imputed.div.df <- imputed %>%
+  dplyr::mutate(divergent.pos = ifelse(test = QTL %in% imputed.divergent.markers$QTL, 
+                                   yes = "Divergent Marker", 
+                                   no = "Non-Divergent Marker"),
+                divergent.interval = ifelse(test = QTL %in% imputed.divergent.intervals$QTL, 
+                                   yes = "Divergent Interval", 
+                                   no = "Non-Divergent Interval"),
+                detected = ifelse(test = Detected == TRUE, 
+                                  yes = "Detected",
+                                  no = "Not Detected"))
+```
+
 ### Intra-Chromosomal False-Positives
 ```{r echo=FALSE, fig.height=7, fig.width=5}
 closest.intraFP.summary <- closest.FP.df %>%
@@ -479,5 +481,7 @@ ggplot(closest.extraFP.summary, mapping = aes(x = variant.set, y = mean.interval
   labs(x = "Chromosome",
        y = "False-Positive Interval Width (Mb)")
 ```
+
+
 
 
