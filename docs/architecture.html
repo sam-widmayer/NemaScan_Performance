@@ -13,6 +13,7 @@
 
 <title>Polygenic Architectures are Difficult to Resolve Using GWAS</title>
 
+<script src="site_libs/header-attrs-2.5/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
@@ -34,6 +35,8 @@ div.section {
   padding-top: 12px;
 }
 </style>
+
+
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -344,7 +347,7 @@ $(document).ready(function () {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2020-11-24
+<strong>Last updated:</strong> 2020-12-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -359,7 +362,7 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <hr>
 </div>
 <div id="checks" class="tab-pane fade">
-<div class="panel-group" id="workflowr-checks">
+<div id="workflowr-checks" class="panel-group">
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
@@ -392,7 +395,7 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 </div>
 <div id="strongSeedstrongcodesetseed20200825code" class="panel-collapse collapse">
 <div class="panel-body">
-<p>The command <code>set.seed(20200825)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+<p>The command <code>set.seed(20200825)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
 </div>
 </div>
 </div>
@@ -445,7 +448,7 @@ relative
 <tbody>
 <tr>
 <td style="text-align:left;">
-~/Documents/AndersenLab/NemaScan_Performance/
+~/Documents/projects/NemaScan_Performance/
 </td>
 <td style="text-align:left;">
 .
@@ -459,16 +462,16 @@ relative
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree385b5cbb02ca682a4e03d95e43e97ee7f291f4d9targetblank385b5cba"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/385b5cbb02ca682a4e03d95e43e97ee7f291f4d9" target="_blank">385b5cb</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree68829fe7ff9d1f8846df2edf35882f6091f73db2targetblank68829fea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/68829fe7ff9d1f8846df2edf35882f6091f73db2" target="_blank">68829fe</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree385b5cbb02ca682a4e03d95e43e97ee7f291f4d9targetblank385b5cba" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree68829fe7ff9d1f8846df2edf35882f6091f73db2targetblank68829fea" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/385b5cbb02ca682a4e03d95e43e97ee7f291f4d9" target="_blank">385b5cb</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/68829fe7ff9d1f8846df2edf35882f6091f73db2" target="_blank">68829fe</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -476,26 +479,71 @@ Note that you need to be careful to ensure that all relevant files for the analy
 <pre><code>
 Ignored files:
     Ignored:    .DS_Store
+    Ignored:    .Rhistory
+    Ignored:    analysis/.DS_Store
+    Ignored:    code/.DS_Store
     Ignored:    data/.DS_Store
+    Ignored:    data/.Rhistory
+    Ignored:    output/.DS_Store
 
 Untracked files:
+    Untracked:  code/2014_toxinphenotypes.R
+    Untracked:  code/Find_GCTA_Intervals.R
+    Untracked:  code/startup.R
+    Untracked:  code/susie.R
+    Untracked:  data/NemaScan_Performance.Algorithm.Sims.20201024.RData
     Untracked:  data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData
+    Untracked:  data/NemaScan_Performance.Algorithm.Sims.v.2.20201104.RData
     Untracked:  data/NemaScan_Performance.Architecture.20201120.RData
+    Untracked:  data/NemaScan_Performance.Architecture.CI50.20201130.RData
+    Untracked:  data/NemaScan_Performance.Architecture.CI50.group500.20201201.RData
+    Untracked:  data/NemaScan_Performance.Architecture.group500.20201124.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_GAMMA_EMMA_hardfiltered.20201020.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_REDO.20200909.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_cendr_sets.20200929.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20201018.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20201019.RData
     Untracked:  data/NemaScan_Performance.Variant.Set.HF.chr125.20201112.RData
     Untracked:  data/NemaScan_Performance.Variant.Set.Hard.Filtered.20201111.RData
     Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.20201111.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.NonDivergent.20201112.RData
     Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.chr125.20201112.RData
-    Untracked:  data/dauer_total_independent_tests.txt
-    Untracked:  data/median.dauer.fraction_processed_mapping.tsv
-    Untracked:  data/processed_median.dauer.fraction_LMM_EXACT_INBRED_mapping.tsv
-    Untracked:  data/processed_median.dauer.fraction_LMM_EXACT_LOCO_mapping.tsv
-    Untracked:  output/WB.figure.png
-    Untracked:  output/pr.curve.variant.set.png
+    Untracked:  data/TO_SIMS.bim
+    Untracked:  data/all_susie_BF_hits.tsv
+    Untracked:  data/all_susie_hits.tsv
+    Untracked:  data/causal.variants.sim.100.txt
+    Untracked:  data/causal.variants.sim.5.txt
+    Untracked:  data/hard.filtered.snps.bim
+    Untracked:  data/imputed.snps.bim
+    Untracked:  output/2014_toxin_phenos.tsv
+    Untracked:  output/5_104_0.8_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_12_0.2_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_13_0.7_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_13_0.8_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_140_0.8_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_14_0.1_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_158_0.8_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_21_0.5_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_21_0.9_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_22_0.5_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_22_0.9_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_27_0.3_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_27_0.9_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_34_0.5_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/5_42_0.5_0.05_0.5-5_hahnel.isotypes.manhattan.plot.png
+    Untracked:  output/n.divergent.variants.in.variant.set.png
+    Untracked:  output/perc.divergent.variants.in.variant.set.png
     Untracked:  output/prelim.fig.1.png
-    Untracked:  output/prelim.fig.2.png
+    Untracked:  output/susie.validation.csv
+    Untracked:  power.plot.png
 
 Unstaged changes:
-    Modified:   analysis/variant.set.comp.Rmd
+    Modified:   analysis/algorithm.evaluation.Rmd
 
 </code></pre>
 <p>
@@ -534,6 +582,74 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/68829fe7ff9d1f8846df2edf35882f6091f73db2/analysis/architecture.Rmd" target="_blank">68829fe</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-12-01
+</td>
+<td>
+integrate multiple CI and grouping params
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/c39b2011fae9980784fa5eae10c5ae4344ac1c68/analysis/architecture.Rmd" target="_blank">c39b201</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-12-01
+</td>
+<td>
+integrate multiple CI and grouping params
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/f24b92958c68ffbab3e8afa43b345fa2aab9a69c/analysis/architecture.Rmd" target="_blank">f24b929</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-30
+</td>
+<td>
+turkey day changes
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/sam-widmayer/NemaScan_Performance/fcfac6a4c18bc150a0a338a12ee612b61b6514b4/docs/architecture.html" target="_blank">fcfac6a</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -643,8 +759,8 @@ update plots
 </div>
 </div>
 </div>
-<div id="analysis-date-november-24-2020" class="section level3">
-<h3>Analysis date: November 24, 2020</h3>
+<div id="analysis-date-december-01-2020" class="section level3">
+<h3>Analysis date: December 01, 2020</h3>
 </div>
 <div id="nemascan-simulation-performance-was-assessed-with-the-following-experimental-parameters" class="section level3">
 <h3>NemaScan simulation performance was assessed with the following experimental parameters:</h3>
@@ -770,19 +886,25 @@ Sam
 </table>
 </div>
 </div>
-<pre><code># A tibble: 8 x 6
-# Groups:   h2 [4]
-  h2    algorithm        `1`         `5`         `10`        `25`       
-  &lt;fct&gt; &lt;chr&gt;            &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;      
-1 0.2   LMM-EXACT-INBRED 1.48 ± 1.32 1.29 ± 0.8  1.83 ± 1.75 2.05 ± 1.99
-2 0.2   LMM-EXACT-LOCO   1.21 ± 0.46 1.27 ± 0.54 1.28 ± 0.68 1.12 ± 0.33
-3 0.4   LMM-EXACT-INBRED 1.34 ± 0.98 1.56 ± 1.03 1.73 ± 0.74 1.61 ± 0.78
-4 0.4   LMM-EXACT-LOCO   1.87 ± 1.58 1.94 ± 1.34 2.02 ± 1.01 1.95 ± 1.01
-5 0.6   LMM-EXACT-INBRED 1.92 ± 1.89 2.14 ± 1.65 2.15 ± 1.06 2.21 ± 1.24
-6 0.6   LMM-EXACT-LOCO   2.76 ± 2.55 2.66 ± 1.82 2.8 ± 1.43  2.59 ± 1.29
-7 0.8   LMM-EXACT-INBRED 2.33 ± 2.16 2.51 ± 1.83 2.68 ± 1.38 2.95 ± 1.75
-8 0.8   LMM-EXACT-LOCO   3.45 ± 2.86 3.2 ± 1.89  3.22 ± 1.63 3.44 ± 1.71</code></pre>
-<pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;)</code></pre>
+<pre><code>   h2        algorithm group.size  CI           1           5          10
+1 0.2 LMM-EXACT-INBRED       1000 150 1.48 ± 1.32  1.29 ± 0.8 1.83 ± 1.75
+2 0.2   LMM-EXACT-LOCO       1000 150 1.21 ± 0.46 1.27 ± 0.54 1.28 ± 0.68
+3 0.4 LMM-EXACT-INBRED       1000 150 1.34 ± 0.98 1.56 ± 1.03 1.73 ± 0.74
+4 0.4   LMM-EXACT-LOCO       1000 150 1.87 ± 1.58 1.94 ± 1.34 2.02 ± 1.01
+5 0.6 LMM-EXACT-INBRED       1000 150 1.92 ± 1.89 2.14 ± 1.65 2.15 ± 1.06
+6 0.6   LMM-EXACT-LOCO       1000 150 2.76 ± 2.55 2.66 ± 1.82  2.8 ± 1.43
+7 0.8 LMM-EXACT-INBRED       1000 150 2.33 ± 2.16 2.51 ± 1.83 2.68 ± 1.38
+8 0.8   LMM-EXACT-LOCO       1000 150 3.45 ± 2.86  3.2 ± 1.89 3.22 ± 1.63
+           25
+1 2.05 ± 1.99
+2 1.12 ± 0.33
+3 1.61 ± 0.78
+4 1.95 ± 1.01
+5 2.21 ± 1.24
+6 2.59 ± 1.29
+7 2.95 ± 1.75
+8 3.44 ± 1.71</code></pre>
+<pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;group.size&quot;, &quot;CI&quot;)</code></pre>
 <p><img src="figure/architecture.Rmd/PR%20curve-1.png" width="864" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-PR-curve-1">
@@ -808,6 +930,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/fcfac6a4c18bc150a0a338a12ee612b61b6514b4/docs/figure/architecture.Rmd/PR curve-1.png" target="_blank">fcfac6a</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/d4f156386b38dfc0d9ed09fc4d471ad95ba7d0d0/docs/figure/architecture.Rmd/PR curve-1.png" target="_blank">d4f1563</a>
 </td>
 <td>
@@ -821,65 +954,375 @@ Sam
 </table>
 </div>
 </div>
-<pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)
-Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)</code></pre>
-<pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;)</code></pre>
-<p><img src="figure/architecture.Rmd/metrics%20v%20nQTL-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/architecture.Rmd/metrics%20v%20nQTL-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/architecture.Rmd/metrics%20v%20nQTL-3.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>options(dplyr.summarise.inform = FALSE)
-dat %&gt;%
-  dplyr::group_by(h2, algorithm, nQTL) %&gt;%
-  yardstick::sens(truth = Simulated, estimate = Detected) %&gt;%
-  dplyr::mutate(.metric = &quot;Power&quot;) %&gt;%
-  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %&gt;%
-  dplyr::arrange(nQTL) %&gt;%
-  dplyr::select(-.metric, -.estimator) %&gt;%
-  dplyr::mutate(LOCO.PLUSMINUS = (`LMM-EXACT-LOCO`-`LMM-EXACT-INBRED`))</code></pre>
-<pre><code># A tibble: 16 x 5
-   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` LOCO.PLUSMINUS
-   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt;          &lt;dbl&gt;
- 1 0.2   1                 0.7              0.79           0.09  
- 2 0.4   1                 0.818            0.909          0.0909
- 3 0.6   1                 0.88             1              0.12  
- 4 0.8   1                 0.88             1              0.12  
- 5 0.2   5                 0.198            0.220          0.0220
- 6 0.4   5                 0.275            0.353          0.0782
- 7 0.6   5                 0.335            0.451          0.116 
- 8 0.8   5                 0.415            0.555          0.140 
- 9 0.2   10                0.139            0.111         -0.0281
-10 0.4   10                0.178            0.224          0.0461
-11 0.6   10                0.231            0.322          0.0913
-12 0.8   10                0.290            0.406          0.116 
-13 0.2   25                0.0984           0.0510        -0.0474
-14 0.4   25                0.0859           0.134          0.0482
-15 0.6   25                0.130            0.207          0.0767
-16 0.8   25                0.177            0.290          0.113 </code></pre>
-<pre class="r"><code>dat %&gt;%
-  dplyr::group_by(h2, algorithm, nQTL) %&gt;%
-  yardstick::precision(truth = Simulated, estimate = Detected) %&gt;%
-  dplyr::mutate(.metric = &quot;Precision&quot;) %&gt;%
-  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %&gt;%
-  dplyr::arrange(nQTL) %&gt;%
-  dplyr::select(-.metric, -.estimator) %&gt;%
-  dplyr::mutate(INBRED.PLUSMINUS = (`LMM-EXACT-INBRED`-`LMM-EXACT-LOCO`))</code></pre>
-<pre><code># A tibble: 16 x 5
-   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` INBRED.PLUSMINUS
-   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
- 1 0.2   1                  0.667            0.798        -0.131   
- 2 0.4   1                  0.736            0.517         0.219   
- 3 0.6   1                  0.521            0.362         0.158   
- 4 0.8   1                  0.429            0.290         0.139   
- 5 0.2   5                  0.868            0.894        -0.0259  
- 6 0.4   5                  0.890            0.815         0.0748  
- 7 0.6   5                  0.749            0.719         0.0300  
- 8 0.8   5                  0.745            0.718         0.0270  
- 9 0.2   10                 0.848            0.895        -0.0476  
-10 0.4   10                 0.927            0.868         0.0590  
-11 0.6   10                 0.898            0.863         0.0355  
-12 0.8   10                 0.873            0.879        -0.00541 
-13 0.2   25                 0.932            0.977        -0.0454  
-14 0.4   25                 0.955            0.965        -0.00996 
-15 0.6   25                 0.964            0.964        -0.000134
-16 0.8   25                 0.932            0.955        -0.0228  </code></pre>
+<pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;group.size&quot;, &quot;CI&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)
+Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;group.size&quot;, &quot;CI&quot;, &quot;.metric&quot;, &quot;.estimator&quot;, &quot;.estimate&quot;)</code></pre>
+<pre><code>Joining, by = c(&quot;h2&quot;, &quot;algorithm&quot;, &quot;nQTL&quot;, &quot;group.size&quot;, &quot;CI&quot;)</code></pre>
+<p><img src="figure/architecture.Rmd/metrics%20v%20nQTL-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-nQTL-1">
+Past versions of “metrics v nQTL-1.png”
+</button>
+</p>
+<div id="fig-no-spaces-metrics-v-nQTL-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/fcfac6a4c18bc150a0a338a12ee612b61b6514b4/docs/figure/architecture.Rmd/metrics v nQTL-1.png" target="_blank">fcfac6a</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/architecture.Rmd/metrics%20v%20nQTL-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-nQTL-2">
+Past versions of “metrics v nQTL-2.png”
+</button>
+</p>
+<div id="fig-no-spaces-metrics-v-nQTL-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/fcfac6a4c18bc150a0a338a12ee612b61b6514b4/docs/figure/architecture.Rmd/metrics v nQTL-2.png" target="_blank">fcfac6a</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/architecture.Rmd/metrics%20v%20nQTL-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-metrics-v-nQTL-3">
+Past versions of “metrics v nQTL-3.png”
+</button>
+</p>
+<div id="fig-no-spaces-metrics-v-nQTL-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/fcfac6a4c18bc150a0a338a12ee612b61b6514b4/docs/figure/architecture.Rmd/metrics v nQTL-3.png" target="_blank">fcfac6a</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2020-11-24
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre><code>[1] &quot;Group Size: 500&quot;
+[1] &quot;CI Extension: 50&quot;
+# A tibble: 16 x 5
+   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` winner
+   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1                 0.878            0.898  LOCO  
+ 2 0.2   5                 0.201            0.207  LOCO  
+ 3 0.2   10                0.131            0.115  INBRED
+ 4 0.2   25                0.0703           0.0450 INBRED
+ 5 0.4   1                 0.960            0.960  INBRED
+ 6 0.4   5                 0.293            0.341  LOCO  
+ 7 0.4   10                0.165            0.199  LOCO  
+ 8 0.4   25                0.0750           0.108  LOCO  
+ 9 0.6   1                 0.959            1      LOCO  
+10 0.6   5                 0.337            0.398  LOCO  
+11 0.6   10                0.206            0.268  LOCO  
+12 0.6   25                0.115            0.186  LOCO  
+13 0.8   1                 0.960            1      LOCO  
+14 0.8   5                 0.388            0.478  LOCO  
+15 0.8   10                0.250            0.338  LOCO  
+16 0.8   25                0.153            0.257  LOCO  
+[1] &quot;Group Size: 500&quot;
+[1] &quot;CI Extension: 150&quot;
+# A tibble: 16 x 5
+   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` winner
+   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1                 0.838            0.859  LOCO  
+ 2 0.2   5                 0.239            0.229  INBRED
+ 3 0.2   10                0.189            0.114  INBRED
+ 4 0.2   25                0.121            0.0563 INBRED
+ 5 0.4   1                 0.89             0.93   LOCO  
+ 6 0.4   5                 0.271            0.333  LOCO  
+ 7 0.4   10                0.165            0.218  LOCO  
+ 8 0.4   25                0.0856           0.125  LOCO  
+ 9 0.6   1                 0.9              1      LOCO  
+10 0.6   5                 0.323            0.418  LOCO  
+11 0.6   10                0.226            0.321  LOCO  
+12 0.6   25                0.123            0.192  LOCO  
+13 0.8   1                 0.91             1      LOCO  
+14 0.8   5                 0.369            0.510  LOCO  
+15 0.8   10                0.284            0.392  LOCO  
+16 0.8   25                0.173            0.282  LOCO  
+[1] &quot;Group Size: 1000&quot;
+[1] &quot;CI Extension: 50&quot;
+# A tibble: 16 x 5
+   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` winner
+   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1                 0.806            0.867  LOCO  
+ 2 0.2   5                 0.247            0.183  INBRED
+ 3 0.2   10                0.113            0.108  INBRED
+ 4 0.2   25                0.0570           0.0558 INBRED
+ 5 0.4   1                 0.898            0.929  LOCO  
+ 6 0.4   5                 0.263            0.291  LOCO  
+ 7 0.4   10                0.146            0.198  LOCO  
+ 8 0.4   25                0.0767           0.124  LOCO  
+ 9 0.6   1                 0.918            1      LOCO  
+10 0.6   5                 0.321            0.384  LOCO  
+11 0.6   10                0.201            0.275  LOCO  
+12 0.6   25                0.120            0.191  LOCO  
+13 0.8   1                 0.918            1      LOCO  
+14 0.8   5                 0.357            0.476  LOCO  
+15 0.8   10                0.246            0.365  LOCO  
+16 0.8   25                0.170            0.286  LOCO  
+[1] &quot;Group Size: 1000&quot;
+[1] &quot;CI Extension: 150&quot;
+# A tibble: 16 x 5
+   h2    nQTL  `LMM-EXACT-INBRED` `LMM-EXACT-LOCO` winner
+   &lt;fct&gt; &lt;fct&gt;              &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1                 0.7              0.79   LOCO  
+ 2 0.2   5                 0.198            0.220  LOCO  
+ 3 0.2   10                0.139            0.111  INBRED
+ 4 0.2   25                0.0984           0.0510 INBRED
+ 5 0.4   1                 0.818            0.909  LOCO  
+ 6 0.4   5                 0.275            0.353  LOCO  
+ 7 0.4   10                0.178            0.224  LOCO  
+ 8 0.4   25                0.0859           0.134  LOCO  
+ 9 0.6   1                 0.88             1      LOCO  
+10 0.6   5                 0.335            0.451  LOCO  
+11 0.6   10                0.231            0.322  LOCO  
+12 0.6   25                0.130            0.207  LOCO  
+13 0.8   1                 0.88             1      LOCO  
+14 0.8   5                 0.415            0.555  LOCO  
+15 0.8   10                0.290            0.406  LOCO  
+16 0.8   25                0.177            0.290  LOCO  </code></pre>
+<pre><code>[1] &quot;CI Extension: 50&quot;
+[1] &quot;Algorithm: LMM-EXACT-INBRED&quot;
+# A tibble: 16 x 5
+   h2    nQTL   `500` `1000` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.878  0.806  500   
+ 2 0.4   1     0.960  0.898  500   
+ 3 0.6   1     0.959  0.918  500   
+ 4 0.8   1     0.960  0.918  500   
+ 5 0.2   5     0.201  0.247  1000  
+ 6 0.4   5     0.293  0.263  500   
+ 7 0.6   5     0.337  0.321  500   
+ 8 0.8   5     0.388  0.357  500   
+ 9 0.2   10    0.131  0.113  500   
+10 0.4   10    0.165  0.146  500   
+11 0.6   10    0.206  0.201  500   
+12 0.8   10    0.250  0.246  500   
+13 0.2   25    0.0703 0.0570 500   
+14 0.4   25    0.0750 0.0767 1000  
+15 0.6   25    0.115  0.120  1000  
+16 0.8   25    0.153  0.170  1000  
+[1] &quot;CI Extension: 150&quot;
+[1] &quot;Algorithm: LMM-EXACT-INBRED&quot;
+# A tibble: 16 x 5
+   h2    nQTL   `500` `1000` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.838  0.7    500   
+ 2 0.4   1     0.89   0.818  500   
+ 3 0.6   1     0.9    0.88   500   
+ 4 0.8   1     0.91   0.88   500   
+ 5 0.2   5     0.239  0.198  500   
+ 6 0.4   5     0.271  0.275  1000  
+ 7 0.6   5     0.323  0.335  1000  
+ 8 0.8   5     0.369  0.415  1000  
+ 9 0.2   10    0.189  0.139  500   
+10 0.4   10    0.165  0.178  1000  
+11 0.6   10    0.226  0.231  1000  
+12 0.8   10    0.284  0.290  1000  
+13 0.2   25    0.121  0.0984 500   
+14 0.4   25    0.0856 0.0859 1000  
+15 0.6   25    0.123  0.130  1000  
+16 0.8   25    0.173  0.177  1000  
+[1] &quot;CI Extension: 50&quot;
+[1] &quot;Algorithm: LMM-EXACT-LOCO&quot;
+# A tibble: 16 x 5
+   h2    nQTL   `500` `1000` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.898  0.867  500   
+ 2 0.4   1     0.960  0.929  500   
+ 3 0.6   1     1      1      1000  
+ 4 0.8   1     1      1      1000  
+ 5 0.2   5     0.207  0.183  500   
+ 6 0.4   5     0.341  0.291  500   
+ 7 0.6   5     0.398  0.384  500   
+ 8 0.8   5     0.478  0.476  500   
+ 9 0.2   10    0.115  0.108  500   
+10 0.4   10    0.199  0.198  500   
+11 0.6   10    0.268  0.275  1000  
+12 0.8   10    0.338  0.365  1000  
+13 0.2   25    0.0450 0.0558 1000  
+14 0.4   25    0.108  0.124  1000  
+15 0.6   25    0.186  0.191  1000  
+16 0.8   25    0.257  0.286  1000  
+[1] &quot;CI Extension: 150&quot;
+[1] &quot;Algorithm: LMM-EXACT-LOCO&quot;
+# A tibble: 16 x 5
+   h2    nQTL   `500` `1000` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.859  0.79   500   
+ 2 0.4   1     0.93   0.909  500   
+ 3 0.6   1     1      1      1000  
+ 4 0.8   1     1      1      1000  
+ 5 0.2   5     0.229  0.220  500   
+ 6 0.4   5     0.333  0.353  1000  
+ 7 0.6   5     0.418  0.451  1000  
+ 8 0.8   5     0.510  0.555  1000  
+ 9 0.2   10    0.114  0.111  500   
+10 0.4   10    0.218  0.224  1000  
+11 0.6   10    0.321  0.322  1000  
+12 0.8   10    0.392  0.406  1000  
+13 0.2   25    0.0563 0.0510 500   
+14 0.4   25    0.125  0.134  1000  
+15 0.6   25    0.192  0.207  1000  
+16 0.8   25    0.282  0.290  1000  </code></pre>
+<pre><code>[1] &quot;Group Size: 500&quot;
+[1] &quot;Algorithm: LMM-EXACT-INBRED&quot;
+# A tibble: 16 x 5
+   h2    nQTL    `50`  `150` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.878  0.838  50    
+ 2 0.4   1     0.960  0.89   50    
+ 3 0.6   1     0.959  0.9    50    
+ 4 0.8   1     0.960  0.91   50    
+ 5 0.2   5     0.201  0.239  150   
+ 6 0.4   5     0.293  0.271  50    
+ 7 0.6   5     0.337  0.323  50    
+ 8 0.8   5     0.388  0.369  50    
+ 9 0.2   10    0.131  0.189  150   
+10 0.4   10    0.165  0.165  150   
+11 0.6   10    0.206  0.226  150   
+12 0.8   10    0.250  0.284  150   
+13 0.2   25    0.0703 0.121  150   
+14 0.4   25    0.0750 0.0856 150   
+15 0.6   25    0.115  0.123  150   
+16 0.8   25    0.153  0.173  150   
+[1] &quot;Group Size: 1000&quot;
+[1] &quot;Algorithm: LMM-EXACT-INBRED&quot;
+# A tibble: 16 x 5
+   h2    nQTL    `50`  `150` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.806  0.7    50    
+ 2 0.4   1     0.898  0.818  50    
+ 3 0.6   1     0.918  0.88   50    
+ 4 0.8   1     0.918  0.88   50    
+ 5 0.2   5     0.247  0.198  50    
+ 6 0.4   5     0.263  0.275  150   
+ 7 0.6   5     0.321  0.335  150   
+ 8 0.8   5     0.357  0.415  150   
+ 9 0.2   10    0.113  0.139  150   
+10 0.4   10    0.146  0.178  150   
+11 0.6   10    0.201  0.231  150   
+12 0.8   10    0.246  0.290  150   
+13 0.2   25    0.0570 0.0984 150   
+14 0.4   25    0.0767 0.0859 150   
+15 0.6   25    0.120  0.130  150   
+16 0.8   25    0.170  0.177  150   
+[1] &quot;Group Size: 500&quot;
+[1] &quot;Algorithm: LMM-EXACT-LOCO&quot;
+# A tibble: 16 x 5
+   h2    nQTL    `50`  `150` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.898  0.859  50    
+ 2 0.4   1     0.960  0.93   50    
+ 3 0.6   1     1      1      150   
+ 4 0.8   1     1      1      150   
+ 5 0.2   5     0.207  0.229  150   
+ 6 0.4   5     0.341  0.333  50    
+ 7 0.6   5     0.398  0.418  150   
+ 8 0.8   5     0.478  0.510  150   
+ 9 0.2   10    0.115  0.114  50    
+10 0.4   10    0.199  0.218  150   
+11 0.6   10    0.268  0.321  150   
+12 0.8   10    0.338  0.392  150   
+13 0.2   25    0.0450 0.0563 150   
+14 0.4   25    0.108  0.125  150   
+15 0.6   25    0.186  0.192  150   
+16 0.8   25    0.257  0.282  150   
+[1] &quot;Group Size: 1000&quot;
+[1] &quot;Algorithm: LMM-EXACT-LOCO&quot;
+# A tibble: 16 x 5
+   h2    nQTL    `50`  `150` winner
+   &lt;fct&gt; &lt;fct&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt; 
+ 1 0.2   1     0.867  0.79   50    
+ 2 0.4   1     0.929  0.909  50    
+ 3 0.6   1     1      1      150   
+ 4 0.8   1     1      1      150   
+ 5 0.2   5     0.183  0.220  150   
+ 6 0.4   5     0.291  0.353  150   
+ 7 0.6   5     0.384  0.451  150   
+ 8 0.8   5     0.476  0.555  150   
+ 9 0.2   10    0.108  0.111  150   
+10 0.4   10    0.198  0.224  150   
+11 0.6   10    0.275  0.322  150   
+12 0.8   10    0.365  0.406  150   
+13 0.2   25    0.0558 0.0510 50    
+14 0.4   25    0.124  0.134  150   
+15 0.6   25    0.191  0.207  150   
+16 0.8   25    0.286  0.290  150   </code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -903,40 +1346,40 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] gg.gap_1.3               data.table_1.13.2        wesanderson_0.3.6.9000  
- [4] viridis_0.5.1            viridisLite_0.3.0        RColorBrewer_1.1-2      
- [7] nationalparkcolors_0.1.0 yardstick_0.0.7          workflows_0.1.2         
-[10] tune_0.1.1               rsample_0.0.7            recipes_0.1.13          
-[13] parsnip_0.1.2            modeldata_0.0.2          infer_0.5.3             
-[16] dials_0.0.8              scales_1.1.1             broom_0.7.2             
-[19] tidymodels_0.1.1         forcats_0.5.0            stringr_1.4.0           
-[22] dplyr_1.0.2              purrr_0.3.4              readr_1.4.0             
-[25] tidyr_1.1.2              tibble_3.0.4             ggplot2_3.3.2           
-[28] tidyverse_1.3.0          workflowr_1.6.2         
+ [1] data.table_1.13.2        wesanderson_0.3.6.9000   viridis_0.5.1           
+ [4] viridisLite_0.3.0        RColorBrewer_1.1-2       nationalparkcolors_0.1.0
+ [7] yardstick_0.0.7          workflows_0.2.1          tune_0.1.1              
+[10] rsample_0.0.8            recipes_0.1.13           parsnip_0.1.3           
+[13] modeldata_0.0.2          infer_0.5.3              dials_0.0.9             
+[16] scales_1.1.1             broom_0.7.2              tidymodels_0.1.1        
+[19] forcats_0.5.0            stringr_1.4.0            dplyr_1.0.2             
+[22] purrr_0.3.4              readr_1.4.0              tidyr_1.1.2             
+[25] tibble_3.0.4             ggplot2_3.3.2            tidyverse_1.3.0         
+[28] workflowr_1.6.2         
 
 loaded via a namespace (and not attached):
- [1] colorspace_2.0-0   ellipsis_0.3.1     class_7.3-17       rprojroot_2.0.2   
- [5] fs_1.5.0           rstudioapi_0.13    farver_2.0.3       listenv_0.8.0     
- [9] furrr_0.1.0        prodlim_2019.11.13 fansi_0.4.1        lubridate_1.7.9.2 
+ [1] colorspace_1.4-1   ellipsis_0.3.1     class_7.3-17       rprojroot_1.3-2   
+ [5] fs_1.5.0           rstudioapi_0.11    farver_2.0.3       listenv_0.8.0     
+ [9] furrr_0.1.0        prodlim_2019.11.13 fansi_0.4.1        lubridate_1.7.9   
 [13] xml2_1.3.2         codetools_0.2-16   splines_3.6.3      knitr_1.30        
-[17] jsonlite_1.7.1     pROC_1.16.2        dbplyr_2.0.0       compiler_3.6.3    
-[21] httr_1.4.2         backports_1.2.0    assertthat_0.2.1   Matrix_1.2-18     
-[25] cli_2.2.0          later_1.1.0.1      htmltools_0.5.0    tools_3.6.3       
+[17] jsonlite_1.7.1     pROC_1.16.2        dbplyr_1.4.4       compiler_3.6.3    
+[21] httr_1.4.2         backports_1.1.10   assertthat_0.2.1   Matrix_1.2-18     
+[25] cli_2.1.0          later_1.1.0.1      htmltools_0.5.0    tools_3.6.3       
 [29] gtable_0.3.0       glue_1.4.2         Rcpp_1.0.5         cellranger_1.1.0  
-[33] DiceDesign_1.8-1   vctrs_0.3.5        iterators_1.0.12   timeDate_3043.102 
-[37] gower_0.2.2        xfun_0.19          globals_0.12.5     rvest_0.3.6       
-[41] lifecycle_0.2.0    future_1.18.0      MASS_7.3-51.6      ipred_0.9-9       
+[33] DiceDesign_1.8-1   vctrs_0.3.4        iterators_1.0.12   timeDate_3043.102 
+[37] gower_0.2.2        xfun_0.18          globals_0.13.1     rvest_0.3.6       
+[41] lifecycle_0.2.0    future_1.19.1      MASS_7.3-53        ipred_0.9-9       
 [45] hms_0.5.3          promises_1.1.1     parallel_3.6.3     yaml_2.2.1        
 [49] gridExtra_2.3      rpart_4.1-15       stringi_1.5.3      highr_0.8         
-[53] foreach_1.5.0      lhs_1.0.2          lava_1.6.7         rlang_0.4.8       
+[53] foreach_1.5.0      lhs_1.1.1          lava_1.6.8         rlang_0.4.8       
 [57] pkgconfig_2.0.3    evaluate_0.14      lattice_0.20-41    labeling_0.4.2    
-[61] cowplot_1.1.0      tidyselect_1.1.0   plyr_1.8.6         magrittr_2.0.1    
-[65] R6_2.5.0           generics_0.1.0     DBI_1.1.0          pillar_1.4.7      
-[69] haven_2.3.1        whisker_0.4        withr_2.3.0        survival_3.2-3    
+[61] cowplot_1.1.0      tidyselect_1.1.0   plyr_1.8.6         magrittr_1.5      
+[65] R6_2.4.1           generics_0.0.2     DBI_1.1.0          pillar_1.4.6      
+[69] haven_2.3.1        whisker_0.4        withr_2.3.0        survival_3.2-7    
 [73] nnet_7.3-14        modelr_0.1.8       crayon_1.3.4       utf8_1.1.4        
-[77] rmarkdown_2.5      grid_3.6.3         readxl_1.3.1       git2r_0.27.1      
-[81] reprex_0.3.0       digest_0.6.27      httpuv_1.5.4       munsell_0.5.0     
-[85] GPfit_1.0-8       </code></pre>
+[77] rmarkdown_2.5      grid_3.6.3         readxl_1.3.1       blob_1.2.1        
+[81] git2r_0.27.1       reprex_0.3.0       digest_0.6.27      httpuv_1.5.4      
+[85] munsell_0.5.0      GPfit_1.0-8       </code></pre>
 </div>
 </div>
 
@@ -952,6 +1395,8 @@ footer is added to webpages before the MathJax javascript. -->
     "HTML-CSS": { availableFonts: ["TeX"] }
   });
 </script>
+
+
 
 
 
