@@ -141,7 +141,7 @@ dat.group500.50 <- simulation.metrics.df %>%
                 interval_size = as.numeric(interval_size)) %>%
   dplyr::filter(!algorithm %in% c("No Successful Mappings"),
                 CHROM != 7)
-dat.group500.50$nQTL <- factor(dat.group500.150$nQTL, levels = c("1","5","10","25"))
+dat.group500.50$nQTL <- factor(dat.group500.50$nQTL, levels = c("1","5","10","25"))
 dat.group500.50$group.size <- as.factor(500)
 dat.group500.50$CI <- as.factor(50)
 
