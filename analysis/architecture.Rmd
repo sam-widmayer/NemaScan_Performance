@@ -457,6 +457,7 @@ ggsave(plot = prelim.fig.2, filename = "output/prelim.fig.2.png", height = 8, wi
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 options(dplyr.summarise.inform = FALSE)
 # Which algorithm has greater power
+print("POWER EVALUATION") # NOTE: WINNER HERE IS HIGHER
 power.comp.algorithm <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
@@ -512,6 +513,64 @@ for(i in 1:length(power.comp.CI$data)){
   print(paste0("Group Size: ", as.character(power.comp.CI$group.size[[i]])))
   print(paste0("Algorithm: ", as.character(power.comp.CI$algorithm[[i]])))
   print(power.comp.CI$data[[i]])
+}
+
+print("FPR EVALUATION") # NOTE: WINNER HERE IS LOWER
+FPR.comp.algorithm <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "FPR") %>%
+  tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %>%
+  dplyr::select(-.metric, -.estimator) %>%
+  dplyr::mutate(winner = if_else(condition = `LMM-EXACT-LOCO` >= `LMM-EXACT-INBRED`, 
+                                 true = "INBRED",
+                                 false = "LOCO")) %>%
+  dplyr::group_by(group.size, CI) %>%
+  tidyr::nest()
+
+for(i in 1:length(FPR.comp.algorithm$data)){
+  print(paste0("Group Size: ", as.character(FPR.comp.algorithm$group.size[[i]])))
+  print(paste0("CI Extension: ", as.character(FPR.comp.algorithm$CI[[i]])))
+  print(FPR.comp.algorithm$data[[i]])
+}
+
+
+FPR.comp.group.size <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "FPR") %>%
+  tidyr::pivot_wider(names_from = group.size, values_from = .estimate) %>%
+  dplyr::select(-.metric, -.estimator) %>%
+  dplyr::mutate(winner = if_else(condition = `500` >= `1000`,
+                                 true = "1000",
+                                 false = "500")) %>%
+  dplyr::arrange(nQTL) %>%
+  dplyr::group_by(algorithm, CI) %>%
+  tidyr::nest()
+
+for(i in 1:length(FPR.comp.group.size$data)){
+  print(paste0("CI Extension: ", as.character(FPR.comp.group.size$CI[[i]])))
+  print(paste0("Algorithm: ", as.character(FPR.comp.group.size$algorithm[[i]])))
+  print(FPR.comp.group.size$data[[i]])
+}
+
+FPR.comp.CI <- dat %>%
+  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "FPR") %>%
+  tidyr::pivot_wider(names_from = CI, values_from = .estimate) %>%
+  dplyr::select(-.metric, -.estimator) %>%
+  dplyr::mutate(winner = if_else(condition = `50` >= `150`,
+                                 true = "150",
+                                 false = "50")) %>%
+  dplyr::arrange(nQTL) %>%
+  dplyr::group_by(algorithm, group.size) %>%
+  tidyr::nest()
+
+for(i in 1:length(FPR.comp.CI$data)){
+  print(paste0("Group Size: ", as.character(FPR.comp.CI$group.size[[i]])))
+  print(paste0("Algorithm: ", as.character(FPR.comp.CI$algorithm[[i]])))
+  print(FPR.comp.CI$data[[i]])
 }
 
 ```
