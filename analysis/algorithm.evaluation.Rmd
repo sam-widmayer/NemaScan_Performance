@@ -21,7 +21,7 @@ require(data.table)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 # setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
-setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Lab Computer
+setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
 load(file = "data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData") # EMMA, Algorithm Sims 
 dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
@@ -115,6 +115,7 @@ algorithm.B <- ggplot(pr.curve, mapping = aes(x = recall, y = precision, group =
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
         panel.grid.minor = element_blank()) +
   theme(legend.position = "top") + 
+  ylim(c(0,1)) + 
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   facet_grid(nQTL~algorithm, scales = "free", space = "free") + 
   labs(x = "Recall", y = "Precision")
