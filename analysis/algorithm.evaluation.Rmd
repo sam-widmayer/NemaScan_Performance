@@ -20,8 +20,8 @@ require(data.table)
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-# setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
-setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
+setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
+# setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
 load(file = "data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData") # EMMA, Algorithm Sims 
 dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
