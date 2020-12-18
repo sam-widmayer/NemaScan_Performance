@@ -24,8 +24,39 @@ setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
 # setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
 
 # Default settings: Group = 1000 bp, CI = +150 markers
-load(file = "data/NemaScan_Performance.Architecture.20201120.RData") # Architecture Sims
-dat.group1000.150 <- simulation.metrics.df %>%
+# load(file = "data/NemaScan_Performance.Architecture.20201120.RData") # Architecture Sims
+# dat.group1000.150 <- simulation.metrics.df %>%
+#   tidyr::separate(col = sim,
+#                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+#                   sep = "_", remove = F) %>%
+#   tidyr::separate(col = QTL,
+#                   into = c("CHROM","POS"), 
+#                   sep = ":", remove = F) %>%
+#   dplyr::mutate(h2 = as.factor(h2),
+#                 nQTL = as.factor(nQTL),
+#                 POS = as.numeric(POS),
+#                 startPOS = as.numeric(startPOS),
+#                 peakPOS = as.numeric(peakPOS),
+#                 endPOS = as.numeric(endPOS),
+#                 var.exp  = as.numeric(var.exp), # watch
+#                 Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
+#                 peak_id = as.numeric(peak_id),
+#                 BETA = as.numeric(BETA),
+#                 Effect = as.numeric(Effect),
+#                 Frequency = as.numeric(Frequency),
+#                 log10p = as.numeric(log10p),
+#                 interval_size = as.numeric(interval_size),
+#                 eval.method = paste0("Separate_",algorithm)) %>%
+#   dplyr::filter(!algorithm %in% c("No Successful Mappings"),
+#                 CHROM != 7)
+# dat.group1000.150$nQTL <- factor(dat.group1000.150$nQTL, levels = c("1","5","10","25"))
+# dat.group1000.150$group.size <- as.factor(1000)
+# dat.group1000.150$CI <- as.factor(150)
+
+
+# Dual Algorithm Aggregated Mapping Results: Default settings: Group = 1000 bp, CI = +150 markers
+load(file = "data/NemaScan_Performance.Architecture.Mixed.20201209.RData") # Architecture Sims
+dat.group1000.150.aggregate <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
@@ -48,9 +79,12 @@ dat.group1000.150 <- simulation.metrics.df %>%
                 interval_size = as.numeric(interval_size)) %>%
   dplyr::filter(!algorithm %in% c("No Successful Mappings"),
                 CHROM != 7)
-dat.group1000.150$nQTL <- factor(dat.group1000.150$nQTL, levels = c("1","5","10","25"))
-dat.group1000.150$group.size <- as.factor(1000)
-dat.group1000.150$CI <- as.factor(150)
+dat.group1000.150.aggregate$nQTL <- factor(dat.group1000.150.aggregate$nQTL, levels = c("1","5","10","25"))
+dat.group1000.150.aggregate$group.size <- as.factor(1000)
+dat.group1000.150.aggregate$CI <- as.factor(150)
+dat.group1000.150.aggregate$eval.method <- "Joint"
+
+
 
 # Group = 1000 bp, CI = +50 markers
 load(file = "data/NemaScan_Performance.Architecture.CI50.20201130.RData") # Architecture Sims
@@ -145,13 +179,17 @@ dat.group500.50$nQTL <- factor(dat.group500.50$nQTL, levels = c("1","5","10","25
 dat.group500.50$group.size <- as.factor(500)
 dat.group500.50$CI <- as.factor(50)
 
+# Algorithms Implemented Separately
 dat <- dat.group1000.150 %>%
   dplyr::full_join(., dat.group1000.50) %>%
   dplyr::full_join(., dat.group500.150) %>%
   dplyr::full_join(., dat.group500.50)
-  
 dat$group.size <- factor(dat$group.size, levels = c(500,1000))
 dat$CI <- factor(dat$CI, levels = c(50,150))
+
+# Algorithms Combined for Greatest Hits Result
+dat.default <- dat.group1000.150 %>%
+  dplyr::full_join(., dat.group1000.150.aggregate)
 ```
 
 ### NemaScan simulation performance was assessed with the following experimental parameters:
@@ -166,38 +204,38 @@ dat$CI <- factor(dat$CI, levels = c(50,150))
 h2.pal <- wes_palette("Darjeeling1", 4)[c(1,4,3,2)]
 nQTL.pal <- wes_palette("Darjeeling2", 4)[c(3,1,4,2)]
 options(dplyr.summarise.inform = FALSE)
-dat.group1000.150 %>%
+dat.group1000.150.aggregate %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL)) %>%
   ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = nQTL)) + 
   theme_bw() + 
   geom_point(shape = 21, alpha = 0.75) + 
-  facet_grid(CI+group.size~CHROM, drop = TRUE, scales = "free") + 
+  facet_grid(eval.method~CHROM, drop = TRUE, scales = "free") + 
   scale_fill_manual(values = nQTL.pal) + 
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect",
        title = "Where were QTL Simulated?")
 
-dat.group1000.150 %>%
+dat.group1000.150.aggregate %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL)) %>%
   ggplot(., mapping = aes(x = Frequency, fill = nQTL)) +
   theme_bw() + 
   geom_density() + 
   theme(legend.position = "top") + 
-      facet_grid(CI+group.size~nQTL, drop = TRUE, scales = "free") + 
+      facet_grid(eval.method~nQTL, drop = TRUE, scales = "free") + 
   scale_fill_manual(values = nQTL.pal) + 
   xlim(c(0.05,0.5)) + 
   labs(x = "Minor Allele Frequency",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
-dat.group1000.150 %>%
+dat.group1000.150.aggregate %>%
   dplyr::filter(Simulated == TRUE) %>%
   ggplot(., mapping = aes(x = Simulated.QTL.VarExp, fill = nQTL)) +
   theme_bw() + 
   geom_density() + 
   theme(legend.position = "top") + 
-      facet_grid(nQTL~CI+group.size+h2, drop = TRUE) + 
+      facet_grid(nQTL~eval.method+h2, drop = TRUE) + 
   scale_fill_manual(values = nQTL.pal) + 
   labs(x = "Variance Explained by Simulated QTL",
        y = "Frequency of Simulated QTL (Smoothed Density)")
@@ -323,8 +361,8 @@ QTL_per_peak_plot <- unique.true.positives.dat %>%
 ```
 
 ```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
-pr.curve <- dat.group1000.150 %>%
-  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+pr.curve <- dat.group1000.150.aggregate %>%
+  dplyr::group_by(h2, nQTL, algorithm) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
   dplyr::filter(!is.infinite(.threshold))
 
@@ -337,29 +375,29 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = nQTL, colour =
         panel.grid.minor = element_blank()) +
   theme(legend.position = "top") + 
   scale_colour_brewer(palette = "OrRd", name = "Number of Supporting QTL") +
-  facet_grid(h2~algorithm + group.size + CI) + 
+  facet_grid(algorithm~h2) + 
   labs(x = "Recall", y = "Precision")
 ```
 
 ```{r metrics v nQTL, echo=FALSE}
 options(dplyr.summarise.inform = FALSE)
-power <- dat.group1000.150 %>%
-  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+power <- dat.group1000.150.aggregate %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power")
-precision <- dat.group1000.150 %>%
-  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+precision <- dat.group1000.150.aggregate %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::precision(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Precision")
-pr_auc <- dat.group1000.150 %>%
-  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+pr_auc <- dat.group1000.150.aggregate %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::pr_auc(Simulated, log10p) %>%
   dplyr::mutate(.metric = "Precision-Recall_AUC")
-resolution <- dat.group1000.150 %>%
+resolution <- dat.group1000.150.aggregate %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL, group.size, CI) %>%
-  dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL, group.size, CI, algorithm) %>%
+  dplyr::group_by(h2, algorithm, nQTL) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
                    mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
 
@@ -368,7 +406,7 @@ summarized <- power %>%
   dplyr::full_join(., pr_auc) %>%
   tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
   dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
-                FPR = 1-Precision) %>%
+                FDR = 1-Precision) %>%
   dplyr::left_join(.,resolution) %>%
   dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
                 median.interval.Mb = `median(interval_size)`/1000000,
@@ -381,77 +419,102 @@ summarized <- power %>%
 
 ## PLOTS
 power.plot <- summarized %>%
-  ggplot(., mapping = aes(x = nQTL, y = Power, colour = h2, shape = CI, group = interaction(group.size,h2,CI))) +
+  # dplyr::mutate(algorithm.group = if_else(condition = eval.method == "Joint", 
+  #                                        true = "Joint", 
+  #                                        false = "Separate")) %>%
+  ggplot(., mapping = aes(x = nQTL, y = Power, colour = h2, group = interaction(h2,algorithm))) +
   theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(linetype=group.size)) +
+  geom_point() +
+  geom_line(aes(linetype = algorithm)) + 
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
-  scale_linetype_manual(values = c(1,2), name = "Distance Between Grouped QTL") +
-  facet_grid(algorithm~CI, scales = "free", space = "free") +  
+  scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
+  scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
+  ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
         panel.grid.minor = element_blank()) +
   labs(x = "Number of Supporting QTL")
 
 precision.plot <- summarized %>%
-  ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2, shape = CI, group = interaction(group.size,h2,CI))) +
+  # dplyr::mutate(algorithm.group = if_else(condition = eval.method == "Joint", 
+  #                                        true = "Joint", 
+  #                                        false = "Separate")) %>%
+  ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2, group = interaction(h2,algorithm))) +
   theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(linetype=group.size)) +
+  geom_point() +
+  geom_line(aes(linetype = algorithm)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
-  scale_linetype_manual(values = c(1,2), name = "Distance Between Grouped QTL") +
-  facet_grid(algorithm~CI, scales = "free", space = "free") +  
-  theme(strip.text = element_text(size = 8),
-        legend.position = "top", 
-        panel.grid.minor = element_blank()) +
-  labs(x = "Number of Supporting QTL")
-
-summarized %>%
-  ggplot(., mapping = aes(x = nQTL, y = `Precision-Recall_AUC`, colour = h2, shape = CI, group = interaction(group.size,h2,CI))) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(linetype=group.size)) +
-  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
-  facet_grid(algorithm~CI, scales = "free", space = "free") +  
-  theme(strip.text = element_text(size = 8),
-        legend.position = "top", 
-        panel.grid.minor = element_blank()) +
-  ylim(c(0.8,1)) + 
-  labs(x = "Number of Supporting QTL")
-
-summarized %>%
-  ggplot(., mapping = aes(x = nQTL, y = F1score, colour = h2, shape = CI, group = interaction(group.size,h2,CI))) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(linetype=group.size)) +
-  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
-  facet_grid(.~algorithm, scales = "free", space = "free") +   
-  labs(x = "Number of Supporting QTL")
-
-summarized %>%
-  ggplot(., mapping = aes(x = nQTL, y = FPR, colour = h2, shape = CI, group = interaction(group.size,h2,CI))) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(linetype=group.size)) +
-  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
-  facet_grid(algorithm~CI, scales = "free", space = "free") +   
+  scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
+  scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
   ylim(c(0,1)) + 
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top",
+        panel.grid.minor = element_blank()) +
+  labs(x = "Number of Supporting QTL")
+
+summarized %>%
+  dplyr::mutate(algorithm.group = if_else(condition = eval.method == "Joint", 
+                                         true = "Joint", 
+                                         false = "Separate")) %>%
+  ggplot(., mapping = aes(x = nQTL, y = `Precision-Recall_AUC`, colour = h2, group = interaction(h2,eval.method))) +
+  theme_bw() +
+  geom_point() +
+  geom_line(aes(linetype = algorithm.group, alpha = algorithm.group)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
+  scale_linetype_manual(values = c(1,3,3), name = "Evaluation Method") +
+    ylim(c(0,1)) + 
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top",
+        panel.grid.minor = element_blank()) +
+  labs(x = "Number of Supporting QTL")
+
+summarized %>%
+  dplyr::mutate(algorithm.group = if_else(condition = eval.method == "Joint", 
+                                         true = "Joint", 
+                                         false = "Separate")) %>%
+  ggplot(., mapping = aes(x = nQTL, y = F1score, colour = h2, group = interaction(h2,eval.method))) +
+  theme_bw() +
+  geom_point() +
+  geom_line(aes(linetype = algorithm.group, alpha = algorithm.group)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
+  scale_linetype_manual(values = c(1,3,3), name = "Evaluation Method") +
+    ylim(c(0,1)) + 
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top",
+        panel.grid.minor = element_blank()) +
+  labs(x = "Number of Supporting QTL")
+
+FDR.plot <- summarized %>%
+  # dplyr::mutate(algorithm.group = if_else(condition = eval.method == "Joint", 
+  #                                        true = "Joint", 
+  #                                        false = "Separate")) %>%
+  ggplot(., mapping = aes(x = nQTL, y = FDR, colour = h2, group = interaction(h2,algorithm))) +
+  theme_bw() +
+  geom_point() +
+  geom_line(aes(linetype = algorithm)) +
+  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
+  scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
+  ylim(c(0,1)) + 
+  theme(strip.text = element_text(size = 8),
+        legend.position = "right",
+        panel.grid.minor = element_blank()) +
   labs(x = "Number of Supporting QTL")
 
 plots <- cowplot::plot_grid(power.plot+ theme(legend.position = "none"),
-                            precision.plot+ theme(legend.position = "none"),
-                            unique.hits.plot + theme(legend.position = "none"), 
-                            QTL_per_peak_plot + theme(legend.position = "none"),
-                            nrow = 2,
+                            FDR.plot+ theme(legend.position = "none"),
+                            nrow = 1,
                             labels = "AUTO", align = "hv", axis = "b")
-nQTL.legend <- cowplot::get_legend(QTL_per_peak_plot)
+# nQTL.legend <- cowplot::get_legend(QTL_per_peak_plot)
 h2.legend <- cowplot::get_legend(power.plot)
-legends <- cowplot::plot_grid(h2.legend, nQTL.legend, ncol = 1)
+legends <- cowplot::plot_grid(h2.legend, ncol = 1)
 prelim.fig.2 <- cowplot::plot_grid(plots, 
                                    legends, 
                                    ncol = 1, 
                                    rel_heights = c(6,1))
-ggsave(plot = prelim.fig.2, filename = "output/prelim.fig.2.png", height = 8, width = 10)
+ggsave(plot = prelim.fig.2, filename = "output/prelim.fig.2.png", height = 4, width = 10)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}

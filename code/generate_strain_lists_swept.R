@@ -1,10 +1,12 @@
 library(tidyverse)
+require(ids)
 setwd("~/Documents/projects/NemaScan_Performance/")
+# setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 strain.data <- data.table::fread("data/CelegansStrainData.tsv") 
 sweeps <- data.table::fread("data/sweep_summary.tsv")
 hahnel_204 <- data.table::fread("data/hahnel_209.tsv") %>%
   dplyr::select(strain)
-
+today <- format(Sys.time(), '%Y%m%d')
 # Joining Strain Info
 metadata <- sweeps %>%
   dplyr::full_join(., strain.data) %>%
@@ -26,11 +28,6 @@ metadata <- sweeps %>%
                 X = dplyr::if_else(condition = X == TRUE, 
                                    true = "Swept", 
                                    false = "Unswept"))
-
-metadata %>%
-  ggplot(., mapping = aes(x = I, y = I_hapshare)) + 
-  theme_minimal() +
-  geom_point()
 
 complete <- metadata %>%
   dplyr::select(isotype) %>%
@@ -116,7 +113,6 @@ genome.swept.list <- paste(genome.swept$isotype,sep = "",collapse = ",")
 genome.unswept.list <- paste(genome.unswept$isotype,sep = "",collapse = ",")
 
 # Subsampling of Full CeNDR Set
-
 full.subsample.96.1 <- paste(c(sample(genome.swept$isotype, 41, replace = F),
                                 sample(genome.unswept$isotype, 55, replace = F)),
                               sep = "", collapse = ",")
@@ -157,6 +153,105 @@ full.subsample.200.5 <- paste(c(sample(genome.swept$isotype, 86, replace = F),
 full.subsample.300.5 <- paste(c(sample(genome.swept$isotype, 129, replace = F),
                                 sample(genome.unswept$isotype, 171, replace = F)),
                               sep = "", collapse = ",")
+
+
+# Subsampling of CeNDR Set at Various Sweptness and Population Size
+# From Complete Set
+pop.sizes <- c(seq(1:8)*48)
+n.populations <- rep(500, length(pop.sizes))
+generate.strain.set <- function(pop.size, n.populations){
+  replicate.pops <- list()
+  population.key <- list()
+  for(i in 1:n.populations){
+     strains <- sample(metadata$isotype, pop.size, replace = F)
+     strain.list <- paste(strains, 
+                          sep = "", collapse = ",")
+     population.id <- ids::adjective_animal(n = 1, max_len = c(10,10))
+     replicate.pops[[i]] <- data.frame(population.id, strain.list)
+     
+     population.key[[i]] <- data.frame(strains) %>%
+       dplyr::mutate(population.id = population.id) %>%
+       `colnames<-`(c("isotype","population.id")) %>%
+       dplyr::left_join(.,sweeps)
+     
+  }
+  strain.lists <- Reduce(rbind,replicate.pops)
+  population.keys <- Reduce(rbind,population.key)
+  filename <- paste0("subsampled.strains_",today,"_n",pop.size,"_reps",n.populations)
+  write.table(strain.lists, 
+              file = paste0("output/",filename,".txt"), 
+              quote = F, row.names = F, col.names = F)
+  # write_tsv(population.keys,
+  #           file = paste0("output/",filename,"population.sweep.key.tsv"), 
+  #           quote = F,col_names = F)
+  
+}
+purrr::map2(pop.sizes, n.populations, generate.strain.set)
+
+# From Swept Set
+pop.sizes <- c(seq(1:7)*24)
+n.populations <- rep(500, length(pop.sizes))
+generate.strain.set.swept <- function(pop.size, n.populations){
+  replicate.pops <- list()
+  population.key <- list()
+  for(i in 1:n.populations){
+    strains <- sample(genome.swept$isotype, pop.size, replace = F)
+    strain.list <- paste(strains, 
+                         sep = "", collapse = ",")
+    population.id <- ids::adjective_animal(n = 1, max_len = c(10,10))
+    replicate.pops[[i]] <- data.frame(population.id, strain.list)
+    
+    population.key[[i]] <- data.frame(strains) %>%
+      dplyr::mutate(population.id = population.id) %>%
+      `colnames<-`(c("isotype","population.id")) %>%
+      dplyr::left_join(.,sweeps)
+    
+  }
+  strain.lists <- Reduce(rbind,replicate.pops)
+  population.keys <- Reduce(rbind,population.key)
+  filename <- paste0("subsampled.swept.strains_",today,"_n",pop.size,"_reps",n.populations)
+  write.table(strain.lists, 
+              file = paste0("output/",filename,".txt"), 
+              quote = F, row.names = F, col.names = F)
+  # write_tsv(population.keys,
+  #           file = paste0("output/",filename,"population.sweep.key.tsv"), 
+  #           quote = F,col_names = F)
+  
+}
+purrr::map2(pop.sizes, n.populations, generate.strain.set.swept)
+
+# From Unwept Set
+pop.sizes <- c(seq(1:9)*24)
+n.populations <- rep(500, length(pop.sizes))
+generate.strain.set.unswept <- function(pop.size, n.populations){
+  replicate.pops <- list()
+  population.key <- list()
+  for(i in 1:n.populations){
+    strains <- sample(genome.unswept$isotype, pop.size, replace = F)
+    strain.list <- paste(strains, 
+                         sep = "", collapse = ",")
+    population.id <- ids::adjective_animal(n = 1, max_len = c(10,10))
+    replicate.pops[[i]] <- data.frame(population.id, strain.list)
+    
+    population.key[[i]] <- data.frame(strains) %>%
+      dplyr::mutate(population.id = population.id) %>%
+      `colnames<-`(c("isotype","population.id")) %>%
+      dplyr::left_join(.,sweeps)
+    
+  }
+  strain.lists <- Reduce(rbind,replicate.pops)
+  population.keys <- Reduce(rbind,population.key)
+  filename <- paste0("subsampled.unswept.strains_",today,"_n",pop.size,"_reps",n.populations)
+  write.table(strain.lists, 
+              file = paste0("output/",filename,".txt"), 
+              quote = F, row.names = F, col.names = F)
+  # write_tsv(population.keys,
+  #           file = paste0("output/",filename,"population.sweep.key.tsv"), 
+  #           quote = F,col_names = F)
+  
+}
+purrr::map2(pop.sizes, n.populations, generate.strain.set.unswept)
+
 
 # CeNDR Strain "Sets"
 colnames(metadata)
