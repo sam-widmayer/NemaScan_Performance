@@ -338,19 +338,19 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, colour = nQTL)) +
 
 ```{r metrics, echo=FALSE}
 options(dplyr.summarise.inform = FALSE)
-power <- dat %>%
+power <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power")
-precision <- dat %>%
+precision <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
   yardstick::precision(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Precision")
-pr_auc <- dat %>%
+pr_auc <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
   yardstick::pr_auc(Simulated, log10p) %>%
   dplyr::mutate(.metric = "Precision-Recall_AUC")
-resolution <- dat %>%
+resolution <- dat.group1000.150.aggregate %>%
   dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
   dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL, group.size, CI, algorithm) %>%
@@ -375,19 +375,19 @@ summarized <- power %>%
                 .keep = "unused")
 ```
 
-```{r echo=FALSE}
+```{r plots, echo=FALSE}
 ## PLOTS
 power.plot <- summarized %>%
   dplyr::filter(algorithm == "MIXED") %>%
   ggplot(., mapping = aes(x = nQTL, y = Power, colour = h2, 
-                          group = interaction(h2,algorithm,group.size,CI))) +
+                          group = interaction(h2,algorithm))) +
   theme_bw() +
   geom_point() +
   # geom_line(aes(linetype = algorithm)) +
   geom_line() +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
-  facet_grid(group.size ~ CI) + 
+  # facet_grid(group.size ~ CI) + 
   ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
@@ -395,13 +395,15 @@ power.plot <- summarized %>%
   labs(x = "Number of Supporting QTL")
 
 precision.plot <- summarized %>%
-  ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2, group = interaction(h2,algorithm))) +
+  dplyr::filter(algorithm == "MIXED") %>%
+  ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2, 
+                          group = interaction(h2,algorithm))) +
   theme_bw() +
   geom_point() +
   geom_line(aes(linetype = algorithm)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
-  scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
+  # scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
   ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
@@ -410,7 +412,7 @@ precision.plot <- summarized %>%
 
 FDR.plot <- summarized %>%
   dplyr::filter(algorithm == "MIXED") %>%
-  ggplot(., mapping = aes(x = nQTL, y = FDR, colour = h2, group = interaction(h2,algorithm,group.size,CI))) +
+  ggplot(., mapping = aes(x = nQTL, y = FDR, colour = h2, group = interaction(h2,algorithm))) +
   theme_bw() +
   geom_point() +
   # geom_line(aes(linetype = algorithm)) +
@@ -418,7 +420,7 @@ FDR.plot <- summarized %>%
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
   # scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
-  facet_grid(group.size ~ CI) + 
+  # facet_grid(group.size ~ CI) + 
   ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "right",
