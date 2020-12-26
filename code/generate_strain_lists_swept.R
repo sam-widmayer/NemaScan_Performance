@@ -1,7 +1,7 @@
 library(tidyverse)
 require(ids)
-setwd("~/Documents/projects/NemaScan_Performance/")
-# setwd("~/Documents/AndersenLab/NemaScan_Performance/")
+# setwd("~/Documents/projects/NemaScan_Performance/")
+setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 strain.data <- data.table::fread("data/CelegansStrainData.tsv") 
 sweeps <- data.table::fread("data/sweep_summary.tsv")
 hahnel_204 <- data.table::fread("data/hahnel_209.tsv") %>%
@@ -158,15 +158,16 @@ full.subsample.300.5 <- paste(c(sample(genome.swept$isotype, 129, replace = F),
 # Subsampling of CeNDR Set at Various Sweptness and Population Size
 # From Complete Set
 pop.sizes <- c(seq(1:8)*48)
-n.populations <- rep(500, length(pop.sizes))
+n.populations <- rep(200, length(pop.sizes))
 generate.strain.set <- function(pop.size, n.populations){
   replicate.pops <- list()
   population.key <- list()
   for(i in 1:n.populations){
-     strains <- sample(metadata$isotype, pop.size, replace = F)
+     strains <- sample(unique(metadata$isotype), pop.size, replace = F)
      strain.list <- paste(strains, 
                           sep = "", collapse = ",")
-     population.id <- ids::adjective_animal(n = 1, max_len = c(10,10))
+     population.id <- ids::adjective_animal(n = 1, max_len = c(10,10)) %>%
+       gsub(., pattern = "_", replacement = ".")
      replicate.pops[[i]] <- data.frame(population.id, strain.list)
      
      population.key[[i]] <- data.frame(strains) %>%
@@ -181,16 +182,12 @@ generate.strain.set <- function(pop.size, n.populations){
   write.table(strain.lists, 
               file = paste0("output/",filename,".txt"), 
               quote = F, row.names = F, col.names = F)
-  # write_tsv(population.keys,
-  #           file = paste0("output/",filename,"population.sweep.key.tsv"), 
-  #           quote = F,col_names = F)
-  
 }
 purrr::map2(pop.sizes, n.populations, generate.strain.set)
 
 # From Swept Set
 pop.sizes <- c(seq(1:7)*24)
-n.populations <- rep(500, length(pop.sizes))
+n.populations <- rep(200, length(pop.sizes))
 generate.strain.set.swept <- function(pop.size, n.populations){
   replicate.pops <- list()
   population.key <- list()
@@ -198,7 +195,8 @@ generate.strain.set.swept <- function(pop.size, n.populations){
     strains <- sample(genome.swept$isotype, pop.size, replace = F)
     strain.list <- paste(strains, 
                          sep = "", collapse = ",")
-    population.id <- ids::adjective_animal(n = 1, max_len = c(10,10))
+    population.id <- ids::adjective_animal(n = 1, max_len = c(10,10)) %>%
+      gsub(., pattern = "_", replacement = ".")
     replicate.pops[[i]] <- data.frame(population.id, strain.list)
     
     population.key[[i]] <- data.frame(strains) %>%
@@ -222,7 +220,7 @@ purrr::map2(pop.sizes, n.populations, generate.strain.set.swept)
 
 # From Unwept Set
 pop.sizes <- c(seq(1:9)*24)
-n.populations <- rep(500, length(pop.sizes))
+n.populations <- rep(200, length(pop.sizes))
 generate.strain.set.unswept <- function(pop.size, n.populations){
   replicate.pops <- list()
   population.key <- list()
@@ -230,7 +228,8 @@ generate.strain.set.unswept <- function(pop.size, n.populations){
     strains <- sample(genome.unswept$isotype, pop.size, replace = F)
     strain.list <- paste(strains, 
                          sep = "", collapse = ",")
-    population.id <- ids::adjective_animal(n = 1, max_len = c(10,10))
+    population.id <- ids::adjective_animal(n = 1, max_len = c(10,10)) %>%
+      gsub(., pattern = "_", replacement = ".")
     replicate.pops[[i]] <- data.frame(population.id, strain.list)
     
     population.key[[i]] <- data.frame(strains) %>%
