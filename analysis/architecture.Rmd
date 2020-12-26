@@ -319,8 +319,8 @@ QTL_per_peak_plot <- unique.true.positives.dat %>%
 ```
 
 ```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
-pr.curve <- dat %>%
-  dplyr::group_by(h2, nQTL, algorithm, group.size, CI) %>%
+pr.curve <- dat.group1000.150.aggregate %>%
+  dplyr::group_by(h2, nQTL, algorithm) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
   dplyr::filter(!is.infinite(.threshold))
 
@@ -332,7 +332,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = interaction(nQ
         panel.grid.minor = element_blank()) +
   theme(legend.position = "top") + 
   scale_colour_brewer(palette = "OrRd", name = "Number of Supporting QTL") +
-  facet_grid(h2+algorithm~group.size+CI) + 
+  facet_grid(h2~algorithm) + 
   labs(x = "Recall", y = "Precision")
 ```
 
@@ -375,7 +375,7 @@ summarized <- power %>%
                 .keep = "unused")
 ```
 
-```{r, plots}
+```{r echo=FALSE}
 ## PLOTS
 power.plot <- summarized %>%
   dplyr::filter(algorithm == "MIXED") %>%
@@ -451,6 +451,7 @@ prelim.fig.2 <- cowplot::plot_grid(plots,
                                    ncol = 1, 
                                    rel_heights = c(6,1))
 ggsave(plot = prelim.fig.2, filename = "output/prelim.fig.2.png", height = 4, width = 10)
+prelim.fig.2
 ```
 
 
