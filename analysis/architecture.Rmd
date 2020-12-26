@@ -456,11 +456,11 @@ ggsave(plot = prelim.fig.2, filename = "output/prelim.fig.2.png", height = 4, wi
 
 
 ## TABLES
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 options(dplyr.summarise.inform = FALSE)
 # Which algorithm has greater power
 print("POWER EVALUATION") # NOTE: WINNER HERE IS HIGHER
-power.comp.algorithm <- dat.group1000.150.aggregate %>%
+power.comp.algorithm <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power") %>%
