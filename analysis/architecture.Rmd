@@ -324,7 +324,7 @@ pr.curve <- dat.group1000.150.aggregate %>%
   yardstick::pr_curve(Simulated, log10p) %>%
   dplyr::filter(!is.infinite(.threshold))
 
-ggplot(pr.curve, mapping = aes(x = recall, y = precision, group = interaction(nQTL,group.size), colour = nQTL)) + 
+ggplot(pr.curve, mapping = aes(x = recall, y = precision, colour = nQTL)) + 
   theme_bw() + 
   geom_path() +
   theme(strip.text = element_text(size = 8),
