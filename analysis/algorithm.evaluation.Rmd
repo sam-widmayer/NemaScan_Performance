@@ -234,7 +234,6 @@ summarized %>%
   geom_line(aes(group = algorithm)) +
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
   facet_grid(.~nQTL, scales = "free", space = "free") +  
-  # ylim(c(0,1)) + 
   labs(title = "Precision v. Heritability",
        x = expression(italic(h^2)))
 
@@ -278,19 +277,33 @@ summarized %>%
 ```{r, stats}
 power.stats.1QTL <- dat %>%
   dplyr::filter(nQTL == 1) %>%
-  dplyr::group_by(h2, algorithm, nQTL, Rep) %>%
+  dplyr::group_by(h2, algorithm, Rep) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power")
+  dplyr::mutate(.metric = "Power") %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(h2) %>%
+  tidyr::nest()
+power.stats.5QTL <- dat %>%
+  dplyr::filter(nQTL == 5) %>%
+  dplyr::group_by(h2, algorithm, Rep) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power") %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(h2) %>%
+  tidyr::nest()
+kruskal.h2nested <- function(data){
+  summary(kruskal.test(.estimate ~ algorithm, data = data))
+  pairwise.wilcox.test(data$.estimate, data$algorithm, p.adjust.method = "BH")
+}
 
-power.stats.1QTL %>%
-  dplyr::group_by(algorithm, h2) %>%
-  dplyr::summarise(mean = mean(.estimate),
-                   sd = sd(.estimate)) %>%
-  tidyr::pivot_wider()
-  
-
-kruskal.test(.estimate ~ h2, data = power.stats.1QTL)
-kruskal.test(.estimate ~, data = power.stats.1QTL)
+oneQTL.PWRST <- purrr::map(power.stats.1QTL$data, kruskal.h2nested)
+names(oneQTL.PWRST) <- power.stats.1QTL$h2
+fiveQTL.PWRST <- purrr::map(power.stats.5QTL$data, kruskal.h2nested)
+names(fiveQTL.PWRST) <- power.stats.5QTL$h2
+print("1 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
+oneQTL.PWRST
+print("5 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
+fiveQTL.PWRST
 ```
 
 ```{r MAF+VE, echo=FALSE, message=FALSE, warning=FALSE}
