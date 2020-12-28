@@ -300,10 +300,79 @@ oneQTL.PWRST <- purrr::map(power.stats.1QTL$data, kruskal.h2nested)
 names(oneQTL.PWRST) <- power.stats.1QTL$h2
 fiveQTL.PWRST <- purrr::map(power.stats.5QTL$data, kruskal.h2nested)
 names(fiveQTL.PWRST) <- power.stats.5QTL$h2
-print("1 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
+print("Power, 1 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
 oneQTL.PWRST
-print("5 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
+print("Power, 5 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
 fiveQTL.PWRST
+
+
+# Individual replicate bootstrapping
+pr.auc.bootstrap.1QTL <- function(data, perc){
+  bootstrapped.reps <- sample(as.numeric(unique(data$Rep)), 
+                              length(as.numeric(unique(data$Rep)))*perc, 
+                              replace = T)
+  bootstraps <- list()
+  for(i in 1:length(bootstrapped.reps)){
+    bootstraps[[i]] <- data[which(data$Rep %in% as.character(bootstrapped.reps[i])),] %>%
+      dplyr::filter(nQTL == 1)
+  }
+  Reduce(rbind, bootstraps)
+}
+pr.auc.bootstrap.5QTL <- function(data, perc){
+  bootstrapped.reps <- sample(as.numeric(unique(data$Rep)), 
+                              length(as.numeric(unique(data$Rep)))*perc, 
+                              replace = T)
+  bootstraps <- list()
+  for(i in 1:length(bootstrapped.reps)){
+    bootstraps[[i]] <- data[which(data$Rep %in% as.character(bootstrapped.reps[i])),] %>%
+      dplyr::filter(nQTL == 5)
+  }
+  Reduce(rbind, bootstraps)
+}
+# Bootstrap some number of folds and calculate PR-AUC
+replicate.bootstraps <- list()
+for(j in seq(1:500)){
+  replicate.bootstraps[[j]] <- pr.auc.bootstrap.1QTL(data = dat, perc = 0.8) %>%
+    dplyr::group_by(h2, algorithm) %>%
+    yardstick::pr_auc(Simulated, log10p) %>%
+    dplyr::mutate(.metric = "Precision-Recall_AUC",
+                  fold = j)
+}
+bootstrapped.PRAUC.1QTL <- Reduce(rbind, replicate.bootstraps)
+
+replicate.bootstraps <- list()
+for(j in seq(1:500)){
+  replicate.bootstraps[[j]] <- pr.auc.bootstrap.5QTL(data = dat, perc = 0.8) %>%
+    dplyr::group_by(h2, algorithm) %>%
+    yardstick::pr_auc(Simulated, log10p) %>%
+    dplyr::mutate(.metric = "Precision-Recall_AUC",
+                  fold = j)
+}
+bootstrapped.PRAUC.5QTL <- Reduce(rbind, replicate.bootstraps)
+
+print("Bootstrapped PR-AUC, 1 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
+prAUC.stats.1QTL <- bootstrapped.PRAUC.1QTL %>%
+  dplyr::group_by(h2) %>%
+  tidyr::nest()
+oneQTL.PRAUC.PWRST <- purrr::map(prAUC.stats.1QTL$data, kruskal.h2nested)
+names(oneQTL.PRAUC.PWRST) <- prAUC.stats.1QTL$h2
+bootstrapped.PRAUC.1QTL %>%
+  dplyr::group_by(h2, algorithm) %>%
+  dplyr::summarise(median = median(.estimate)) %>%
+  tidyr::pivot_wider(names_from = h2, values_from = median)
+oneQTL.PRAUC.PWRST
+
+print("Bootstrapped PR-AUC, 5 QTL, Pairwise Wilcoxon Rank Sum Test + BH Correction")
+prAUC.stats.5QTL <- bootstrapped.PRAUC.5QTL %>%
+  dplyr::group_by(h2) %>%
+  tidyr::nest()
+fiveQTL.PRAUC.PWRST <- purrr::map(prAUC.stats.5QTL$data, kruskal.h2nested)
+names(fiveQTL.PRAUC.PWRST) <- prAUC.stats.5QTL$h2
+bootstrapped.PRAUC.5QTL %>%
+  dplyr::group_by(h2, algorithm) %>%
+  dplyr::summarise(median = median(.estimate)) %>%
+  tidyr::pivot_wider(names_from = h2, values_from = median)
+fiveQTL.PRAUC.PWRST
 ```
 
 ```{r MAF+VE, echo=FALSE, message=FALSE, warning=FALSE}
