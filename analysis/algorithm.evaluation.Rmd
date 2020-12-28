@@ -332,7 +332,7 @@ pr.auc.bootstrap.5QTL <- function(data, perc){
 # Bootstrap some number of folds and calculate PR-AUC
 replicate.bootstraps <- list()
 for(j in seq(1:500)){
-  replicate.bootstraps[[j]] <- pr.auc.bootstrap.1QTL(data = dat, perc = 0.8) %>%
+  replicate.bootstraps[[j]] <- pr.auc.bootstrap.1QTL(data = dat, perc = 1) %>%
     dplyr::group_by(h2, algorithm) %>%
     yardstick::pr_auc(Simulated, log10p) %>%
     dplyr::mutate(.metric = "Precision-Recall_AUC",
@@ -342,7 +342,7 @@ bootstrapped.PRAUC.1QTL <- Reduce(rbind, replicate.bootstraps)
 
 replicate.bootstraps <- list()
 for(j in seq(1:500)){
-  replicate.bootstraps[[j]] <- pr.auc.bootstrap.5QTL(data = dat, perc = 0.8) %>%
+  replicate.bootstraps[[j]] <- pr.auc.bootstrap.5QTL(data = dat, perc = 1) %>%
     dplyr::group_by(h2, algorithm) %>%
     yardstick::pr_auc(Simulated, log10p) %>%
     dplyr::mutate(.metric = "Precision-Recall_AUC",
