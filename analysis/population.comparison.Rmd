@@ -17,15 +17,18 @@ require(nationalparkcolors)
 require(RColorBrewer)
 require(GenomicRanges)
 require(cowplot)
+require(workflowr)
+require(ggbeeswarm)
 ```
 
 ## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-setwd("~/Documents/projects/NemaScan_Performance/")
+# setwd("~/Documents/projects/NemaScan_Performance/")
+setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 # load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData")
-load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20201019.RData") # EMMA, hard filtered variants
-dat <- simulation.metrics.df %>%
+load(file = "data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.20201230.RData")
+dat.complete <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
                   sep = "_", remove = F) %>%
@@ -33,6 +36,7 @@ dat <- simulation.metrics.df %>%
                   into = c("CHROM","POS"), 
                   sep = ":", remove = F) %>%
   dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
                 POS = as.numeric(POS),
                 startPOS = as.numeric(startPOS),
                 peakPOS = as.numeric(peakPOS),
@@ -44,240 +48,540 @@ dat <- simulation.metrics.df %>%
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size),
-                algorithm = if_else(condition = algorithm == "EMMAx",
-                                    true = "EMMA",
-                                    false = algorithm)) %>%
-  dplyr::filter(algorithm != "No Successful Mappings",
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(!algorithm %in% c("No Successful Mappings"),
+                algorithm == "MIXED",
                 CHROM != 7)
 
+load("data/NemaScan_Population_Metrics.Demography.SampleSize.Complete.Subsampled.20201229.RData")
+population.features <- population.metrics.df %>%
+  dplyr::filter(!duplicated(strain_set))
+
+hapshare.nested <- population.features %>%
+  dplyr::select(strain_set, contains("hapshare")) %>%
+  tidyr::pivot_longer(cols = contains("hapshare"), names_to = "CHROM.HAPSHARE") %>%
+  tidyr::separate(col = CHROM.HAPSHARE, c("stat","chrom","hapshare")) %>%
+  dplyr::select(-hapshare) %>%
+  dplyr::group_by(stat, chrom) %>%
+  tidyr::nest()
+hapshare.quantiles <- function(data, chrom, stat){
+  data %>%
+    dplyr::mutate(quintile = cut(value, breaks = 5),
+                  stat = stat,
+                  chrom = chrom)
+}
+population.hapshare.quantiles <- pmap(.l = list(hapshare.nested$data, 
+                                                hapshare.nested$chrom, 
+                                                hapshare.nested$stat), 
+                                      .f = hapshare.quantiles) %>%
+  Reduce(rbind,.) %>%
+  tidyr::pivot_wider(names_from = c(stat, chrom), values_from = c(value, quintile)) %>%
+  dplyr::select(strain_set, contains("quintile"))
+
+
+chrom.swept.nested <- population.features %>%
+  dplyr::select(strain_set, I, IV, V, X) %>%
+    tidyr::pivot_longer(cols = c(I, IV, V, X), 
+                        names_to = "CHROM.SWEPT", 
+                        values_to = "PCT.SWEPT") %>%
+  dplyr::group_by(CHROM.SWEPT) %>%
+  tidyr::nest()
+chrom.swept.quantiles <- function(data, CHROM.SWEPT){
+  data %>%
+    dplyr::mutate(quintile = cut(PCT.SWEPT, breaks = 5),
+                  CHROM.SWEPT = CHROM.SWEPT)
+}
+population.swept.quantiles <- pmap(.l = list(chrom.swept.nested$data, 
+                                                chrom.swept.nested$CHROM.SWEPT), 
+                                      .f = chrom.swept.quantiles) %>%
+  Reduce(rbind,.) %>%
+  tidyr::pivot_wider(names_from = CHROM.SWEPT, values_from = c(PCT.SWEPT, quintile)) %>%
+  dplyr::select(strain_set, contains("quintile"))
+
+pop.size <- population.features %>%
+  dplyr::select(strain_set, pop.size)
+
+population.quantiles <- population.hapshare.quantiles %>%
+  dplyr::full_join(., population.swept.quantiles)
+
+dat.population.features <- dat.complete %>%
+  dplyr::left_join(., population.quantiles) %>%
+  dplyr::full_join(., pop.size)
 ```
 
 ## Simulation Parameters
 
 NemaScan simulation performance was assessed with the following experimental parameters:
 
-* ###### Number of Simulated QTL: ```r levels(as.factor(dat$nQTL))```
-* ###### Sample Population(s): ```r levels(as.factor(dat$strain_set))```
-* ###### Heritability(ies): ```r levels(as.factor(dat$h2))```
-* ###### MAF(s): ```r levels(as.factor(dat$MAF))```
-* ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
-* ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat.population.features$nQTL))```
+* ###### Sample Population(s): ```r length(levels(as.factor(dat.population.features$strain_set)))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat.population.features$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat.population.features$effect_range))```
 
 ## Simulated QTL Locations
 
 ```{r echo=FALSE}
-dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(algorithm == "LMM-EXACT") %>%
-  dplyr::filter(!is.na(CHROM)) %>%
+dat.population.features %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL), 
+                !is.na(CHROM)) %>%
   ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
   theme_bw() + 
-  geom_point() + 
-  facet_grid(strain_set~CHROM, drop = TRUE) + 
+  geom_point(alpha = 0.5) + 
+  facet_grid(.~CHROM, drop = TRUE, scales = "free") + 
   labs(x = "Genomic position (Mb)",
        y = "Causal QTL Effect",
        title = "Where were QTL Simulated?")
 
-dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(algorithm == "LMM-EXACT") %>%
-  dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = Frequency, fill = strain_set)) +
-  theme_minimal() + 
-  geom_density(position = "stack") + 
-  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  xlim(c(0.05,0.5)) + 
+dat.population.features %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL)) %>%
+  ggplot(mapping = aes(x = Frequency)) +
+  geom_density(fill = "blue") + 
+  theme_minimal() +
   labs(x = "Minor Allele Frequency",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
-dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(algorithm == "LMM-EXACT") %>%
-  dplyr::filter(!is.na(CHROM)) %>%
-  ggplot(., mapping = aes(x = abs(Effect), fill = strain_set)) +
+dat.population.features %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL)) %>%
+  ggplot(., mapping = aes(x = abs(Effect))) +
   theme_minimal() + 
-  geom_density(position = "stack") + 
-  scale_fill_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
+  geom_density(fill = "red") +
   labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat.population.features %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL)) %>%
+  tidyr::pivot_longer(cols = c(I, IV, V, X), names_to = "CHROM.SWEPT", values_to = "PCT.SWEPT") %>%
+  ggplot(., mapping = aes(x = PCT.SWEPT)) +
+  theme_bw() + 
+  geom_density() +
+  facet_grid(pop.size~CHROM.SWEPT) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Percent of Strains Containing 'Swept' Chromosome")
+
+population.metrics.df %>%
+  tidyr::pivot_longer(cols = c(I, IV, V, X), names_to = "CHROM.SWEPT", values_to = "PCT.SWEPT") %>%
+  ggplot(., mapping = aes(x = PCT.SWEPT)) +
+  theme_bw() + 
+  geom_density() +
+  facet_grid(pop.size~CHROM.SWEPT) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Percent of Strains Containing 'Swept' Chromosome")
+
+population.metrics.df %>%
+  tidyr::pivot_longer(cols = contains("hapshare"), names_to = "CHROM.HAPSHARE") %>%
+  tidyr::separate(col = CHROM.HAPSHARE, c("stat","chrom","hapshare")) %>%
+  dplyr::select(-hapshare) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = value*100)) +
+  theme_bw() + 
+  geom_jitter(width = 0.05, alpha = 0.2) + 
+  facet_grid(stat~chrom) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Population Size",
+       y = "Fraction of Chromosome Swept")
 ```
 
 ## Power and Precision
 
-Strains colloquially referred to as "swept" harbor long-range regions of the genome with depleted variation compared to other areas of the genome, indicative of putative selective sweeps. The reference strain N2, and many other strains from Europe and North America tend to fall into this strain category. Conversely, "unswept" strains tend to lack these regions, more closely resemble diverged isolates such as CB4856, and are commonly observed in the Pacific region and Hawaii. Subsampled strain sets (1-5) are comprised of random samples of both swept and unswept strains totaling to 200, but in proportions equal to the swept/unswept strain composition observed in the complete set of strains available on CeNDR (403). We asked whether mapping populations exhibiting different population genomic features exhibited different performance when applied to GWA mapping.
-
 ```{r include=FALSE}
-power <- dat %>%
-  dplyr::group_by(h2, algorithm, strain_set) %>%
+power <- dat.complete %>%
+  dplyr::group_by(strain_set) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power")
 
-precision <- dat %>%
-  dplyr::group_by(h2, algorithm, strain_set) %>%
+precision <- dat.complete %>%
+  dplyr::group_by(strain_set) %>%
   yardstick::precision(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Precision")
 
-pr_auc <- dat %>%
-  dplyr::group_by(h2, algorithm, strain_set) %>%
+pr_auc <- dat.complete %>%
+  dplyr::group_by(strain_set) %>%
   yardstick::pr_auc(Simulated, log10p) %>%
   dplyr::mutate(.metric = "Precision-Recall_AUC")
 
-roc_auc <- dat %>%
-  dplyr::group_by(h2, algorithm, strain_set) %>%
-  yardstick::roc_auc(Simulated, log10p) %>%
-  dplyr::mutate(.metric = "ROC_AUC")
-
-resolution <- dat %>%
-  dplyr::filter(Detected == TRUE) %>%
+resolution <- dat.complete %>%
+  dplyr::filter(Simulated == TRUE) %>%
   dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, var.exp, strain_set) %>%
-  dplyr::group_by(h2, algorithm, strain_set) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set) %>%
+  dplyr::group_by(strain_set) %>%
   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
-                   mean(var.exp), median(var.exp), sd(var.exp))
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
 
 summarized <- power %>%
   dplyr::full_join(., precision) %>%
   dplyr::full_join(., pr_auc) %>%
-  dplyr::full_join(., roc_auc) %>%
-  dplyr::full_join(., precision) %>%
   tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
-  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power))) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+                FDR = 1-Precision) %>%
   dplyr::left_join(.,resolution) %>%
   dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
                 median.interval.Mb = `median(interval_size)`/1000000,
                 sd.interval.Mb = `sd(interval_size)`/1000000, 
-                mean.PVE = `mean(var.exp)`*100,
-                median.PVE = `median(var.exp)`*100,
-                sd.PVE = `sd(var.exp)`*100, 
-                .keep = "unused")
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
+                .keep = "unused") %>%
+  dplyr::full_join(., pop.size)
+
+
+##### CHROMOSOME I #####
+power.I <- dat.population.features %>%
+  dplyr::filter(CHROM == 1) %>%
+  dplyr::group_by(quintile_I, pop.size) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision.I <- dat.population.features %>%
+  dplyr::filter(CHROM == 1) %>%
+  dplyr::group_by(quintile_I, pop.size) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+pr_auc.I <- dat.population.features %>%
+  dplyr::filter(CHROM == 1) %>%
+  dplyr::group_by(quintile_I, pop.size) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "Precision-Recall_AUC")
+
+resolution.I <- dat.population.features %>%
+  dplyr::filter(CHROM == 1) %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set,quintile_I, pop.size) %>%
+  dplyr::group_by(quintile_I, pop.size) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
+
+summarized.I <- power.I %>%
+  dplyr::full_join(., precision.I) %>%
+  dplyr::full_join(., pr_auc.I) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+                FDR = 1-Precision) %>%
+  dplyr::left_join(.,resolution.I) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
+                .keep = "unused") %>%
+  dplyr::filter(!is.na(Precision),
+                !is.na(Power))
+  
+
+##### CHROMOSOME IV #####
+power.IV <- dat.population.features %>%
+  dplyr::filter(CHROM == 4) %>%
+  dplyr::group_by(quintile_IV, pop.size) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision.IV <- dat.population.features %>%
+  dplyr::filter(CHROM == 4) %>%
+  dplyr::group_by(quintile_IV, pop.size) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+pr_auc.IV <- dat.population.features %>%
+  dplyr::filter(CHROM == 4) %>%
+  dplyr::group_by(quintile_IV, pop.size) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "Precision-Recall_AUC")
+
+resolution.IV <- dat.population.features %>%
+  dplyr::filter(CHROM == 4) %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set,quintile_IV, pop.size) %>%
+  dplyr::group_by(quintile_IV, pop.size) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
+
+summarized.IV <- power.IV %>%
+  dplyr::full_join(., precision.IV) %>%
+  dplyr::full_join(., pr_auc.IV) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+                FDR = 1-Precision) %>%
+  dplyr::left_join(.,resolution.IV) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
+                .keep = "unused") %>%
+  dplyr::filter(!is.na(Precision),
+                !is.na(Power))
+
+
+##### CHROMOSOME V #####
+power.V <- dat.population.features %>%
+  dplyr::filter(CHROM == 5) %>%
+  dplyr::group_by(quintile_V, pop.size) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision.V <- dat.population.features %>%
+  dplyr::filter(CHROM == 5) %>%
+  dplyr::group_by(quintile_V, pop.size) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+pr_auc.V <- dat.population.features %>%
+  dplyr::filter(CHROM == 5) %>%
+  dplyr::group_by(quintile_V, pop.size) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "Precision-Recall_AUC")
+
+resolution.V <- dat.population.features %>%
+  dplyr::filter(CHROM == 5) %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set,quintile_V, pop.size) %>%
+  dplyr::group_by(quintile_V, pop.size) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
+
+summarized.V <- power.V %>%
+  dplyr::full_join(., precision.V) %>%
+  dplyr::full_join(., pr_auc.V) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+                FDR = 1-Precision) %>%
+  dplyr::left_join(.,resolution.V) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
+                .keep = "unused") %>%
+  dplyr::filter(!is.na(Precision),
+                !is.na(Power))
+
+
+##### CHROMOSOME X #####
+power.X <- dat.population.features %>%
+  dplyr::filter(CHROM == 6) %>%
+  dplyr::group_by(quintile_X, pop.size) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power")
+
+precision.X <- dat.population.features %>%
+  dplyr::filter(CHROM == 6) %>%
+  dplyr::group_by(quintile_X, pop.size) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Precision")
+
+pr_auc.X <- dat.population.features %>%
+  dplyr::filter(CHROM == 6) %>%
+  dplyr::group_by(quintile_X, pop.size) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::mutate(.metric = "Precision-Recall_AUC")
+
+resolution.X <- dat.population.features %>%
+  dplyr::filter(CHROM == 6) %>%
+  dplyr::filter(Simulated == TRUE) %>%
+  dplyr::filter(!is.na(var.exp)) %>%
+  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set,quintile_X, pop.size) %>%
+  dplyr::group_by(quintile_X, pop.size) %>%
+  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
+
+summarized.X <- power.X %>%
+  dplyr::full_join(., precision.X) %>%
+  dplyr::full_join(., pr_auc.X) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+                FDR = 1-Precision) %>%
+  dplyr::left_join(.,resolution.X) %>%
+  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+                median.interval.Mb = `median(interval_size)`/1000000,
+                sd.interval.Mb = `sd(interval_size)`/1000000, 
+                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+                median.PVE = `median(Simulated.QTL.VarExp)`*100,
+                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
+                .keep = "unused") %>%
+  dplyr::filter(!is.na(Precision),
+                !is.na(Power))
+#####
 ```
 
-```{r power precision plots, echo=FALSE}
-# algorithm.for.plots <- "EMMA"
-herit.Fscore <- summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  # dplyr::filter(algorithm == algorithm.for.plots) %>%
-  ggplot(., mapping = aes(x = h2, y = F1score, colour = strain_set)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = strain_set)) +
-  facet_grid(.~algorithm) +
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  ylim(c(0,1)) + 
-  theme(legend.position = "none") + 
-  labs(x = expression(italic(h^2)), y = "F-score")
-
-herit.prauc <- summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  # dplyr::filter(algorithm == algorithm.for.plots) %>%
-  ggplot(., mapping = aes(x = h2, y = `Precision-Recall_AUC`, colour = strain_set)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = strain_set)) +
-  facet_grid(.~algorithm) +
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  ylim(c(0,1)) + 
-  theme(legend.position = "none") + 
-  labs(x = expression(italic(h^2)), y = "Precision-Recall AUC")
-
-cowplot::plot_grid(herit.prauc, herit.Fscore, ncol = 2)
-```
-
-## QTL Resolution
-
-```{r interval width plots, echo=FALSE}
-# summarized %>%
-#   dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-#   dplyr::filter(algorithm == algorithm.for.plots) %>%
-#   ggplot(., mapping = aes(x = h2, y = mean.interval.Mb, colour = strain_set)) +
-#   theme_bw() +
-#   geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
-#                       ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-#   # theme(legend.position = "none") + 
-#   # facet_grid(.~algorithm) +
-#   scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-#   labs(x = expression(italic(h^2)),
-#        y = "Mean QTL Interval Width (Mb)")
+```{r sample size plots, echo=FALSE}
+summarized %>%
+  dplyr::select(-.estimator) %>%
+  tidyr::pivot_longer(cols = -c(strain_set, pop.size), names_to = "stat") %>%
+  dplyr::filter(stat %in% c("Power","Precision-Recall_AUC")) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = value)) + 
+  theme_bw() + 
+  geom_violin(draw_quantiles = 0.5) + 
+  facet_grid(.~stat) +
+  labs(y = "Metric Value",
+       x = "Sample Size")
 
 summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  dplyr::filter(algorithm == algorithm.for.plots) %>%
-  ggplot(., mapping = aes(x = F1score, y = mean.interval.Mb, colour = strain_set)) +
-  theme_bw() +
-  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
-                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  theme(legend.position = "none") + 
-  # facet_grid(.~algorithm) +]
-  xlim(c(0,1)) + 
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  labs(x = "F-score",
-       y = "Mean QTL Interval Width (Mb)")
+  dplyr::select(-.estimator) %>%
+  tidyr::pivot_longer(cols = -c(strain_set, pop.size), names_to = "stat") %>%
+  dplyr::filter(stat %in% c("Power","Precision-Recall_AUC")) %>%
+  dplyr::group_by(stat, pop.size) %>%
+  dplyr::summarise(median(value)) %>%
+  tidyr::pivot_wider(names_from = stat, values_from = `median(value)`)
 
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  dplyr::filter(algorithm == algorithm.for.plots) %>%
-  ggplot(., mapping = aes(x = `Precision-Recall_AUC`, y = mean.interval.Mb, colour = strain_set)) +
-  theme_bw() +
-  geom_pointrange(aes(ymin = mean.interval.Mb-sd.interval.Mb,
-                      ymax = mean.interval.Mb+sd.interval.Mb), alpha = 0.7) +
-  theme(legend.position = "none") + 
-  # facet_grid(.~algorithm) +]
-  xlim(c(0,1)) + 
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  labs(x = "Precision-Recall AUC",
-       y = "Mean QTL Interval Width (Mb)")
-
-```
-
-## Beavis Effect
-
-```{r beavis, echo=FALSE}
-options(scipen = 9999)
-f <- dat %>%
-  dplyr::select(QTL,Simulated, Detected, Effect, Frequency, Simulated.QTL.VarExp, var.exp, log10p, h2, algorithm, strain_set, sim) %>%
-  dplyr::mutate(Simulated.QTL.VarExp = Simulated.QTL.VarExp*100,
-                var.exp = var.exp*100,
-                condensed.strain.set = if_else(strain_set != "genome.swept" & strain_set != "genome.unswept", 
-                                               true = "Subsample",
-                                               false = strain_set))
-f$condensed.strain.set <- as.factor(f$condensed.strain.set)
-levels(f$condensed.strain.set) <- c("Swept","Unswept","Subsample")
-
-f %>%
-  dplyr::filter(!is.na(Simulated.QTL.VarExp), 
-                !is.na(var.exp), 
-                algorithm == algorithm.for.plots) %>% # filter: only true positives from specified algorithm
-  ggplot(., mapping = aes(x = Simulated.QTL.VarExp, y = var.exp, colour = strain_set)) + 
+prAUC.plot.I <- summarized.I %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = `Precision-Recall_AUC`, 
+                          colour = quintile_I, 
+                          group = quintile_I)) + 
   theme_bw() + 
-  geom_point(alpha = 0.6) +
-  scale_colour_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  geom_abline(slope = 1) + 
-  theme(legend.position = "none") + 
-  facet_grid(condensed.strain.set~h2)
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome I") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Precision-Recall_AUC",
+       x = "Sample Size")
 
-f %>%
-  dplyr::filter(!is.na(Simulated.QTL.VarExp), 
-                !is.na(var.exp), 
-                algorithm == algorithm.for.plots) %>%
-  tidyr::pivot_longer(cols = contains("var", ignore.case = T), names_to = "Type.Of.Variance") %>%
-  dplyr::mutate(Type.Of.Variance = if_else(condition = Type.Of.Variance == "Simulated.QTL.VarExp",
-                                           true = "Known",
-                                           false = "Estimated by GWA")) %>%
-  ggplot(., mapping = aes(x = value, fill = Type.Of.Variance)) + 
+prAUC.plot.IV <-summarized.IV %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = `Precision-Recall_AUC`, 
+                          colour = quintile_IV, 
+                          group = quintile_IV)) + 
   theme_bw() + 
-  geom_density(alpha = 0.5) + 
-  # scale_fill_manual(values = c(brewer.pal(5, "Greens"),"orange","blue"), name = "Strain Set") + 
-  scale_fill_manual(values = c(brewer.pal(4, "Dark2")), name = "Source") +
-  theme(legend.position = "top") + 
-  facet_grid(condensed.strain.set~h2) + 
-  labs(x = "Phenotypic Variance Explained By QTL (%)",
-       y = "Density")
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome IV") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Precision-Recall_AUC",
+       x = "Sample Size")
 
+
+prAUC.plot.V <-summarized.V %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = `Precision-Recall_AUC`, 
+                          colour = quintile_V, 
+                          group = quintile_V)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome V") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Precision-Recall_AUC",
+       x = "Sample Size")
+
+prAUC.plot.X <-summarized.X %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = `Precision-Recall_AUC`, 
+                          colour = quintile_X, 
+                          group = quintile_X)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome X") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Precision-Recall_AUC",
+       x = "Sample Size")
+
+cowplot::plot_grid(prAUC.plot.I, prAUC.plot.IV, prAUC.plot.V, prAUC.plot.X, nrow = 1)
+
+
+
+power.plot.I <- summarized.I %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = Power, 
+                          colour = quintile_I, 
+                          group = quintile_I)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome I") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Power",
+       x = "Sample Size")
+
+power.plot.IV <-summarized.IV %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = Power, 
+                          colour = quintile_IV, 
+                          group = quintile_IV)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome IV") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Power",
+       x = "Sample Size")
+
+
+power.plot.V <-summarized.V %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = Power, 
+                          colour = quintile_V, 
+                          group = quintile_V)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome V") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Power",
+       x = "Sample Size")
+
+power.plot.X <-summarized.X %>%
+  dplyr::select(-.estimator) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = Power, 
+                          colour = quintile_X, 
+                          group = quintile_X)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_line() + 
+  ylim(c(0,1)) + 
+  scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome X") + 
+  theme(legend.title.align = 0.5,
+        legend.direction = "vertical",
+        legend.box.just = "center",
+        legend.position = "top") + 
+  labs(y = "Power",
+       x = "Sample Size")
+
+cowplot::plot_grid(power.plot.I, power.plot.IV, power.plot.V, power.plot.X, nrow = 1)
 ```
 
 ## Divergent Regions
-```{r divergent region assessment, include=FALSE}
+```{r divergent region assessment, eval=FALSE, include=FALSE}
 common.divergent.regions <- data.table::fread("data/Common_divergent_regions_clustered.tsv") %>%
   dplyr::mutate(chr = as.factor(chr))
 levels(common.divergent.regions$chr) <- c("1","2","3","4","5","6")
