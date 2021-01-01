@@ -147,10 +147,10 @@ dat.population.features %>%
   dplyr::filter(Simulated == TRUE,
                 !is.na(CHROM),
                 !duplicated(QTL)) %>%
-  ggplot(., mapping = aes(x = abs(Effect))) +
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100)) +
   theme_minimal() + 
   geom_density(fill = "red") +
-  labs(x = "abs(QTL Effect)",
+  labs(x = "Variance Explained by Simulated QTL (%)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
 population.metrics.df %>%
