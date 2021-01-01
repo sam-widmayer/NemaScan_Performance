@@ -153,18 +153,6 @@ dat.population.features %>%
   labs(x = "abs(QTL Effect)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
-dat.population.features %>%
-  dplyr::filter(Simulated == TRUE,
-                !is.na(CHROM),
-                !duplicated(QTL)) %>%
-  tidyr::pivot_longer(cols = c(I, IV, V, X), names_to = "CHROM.SWEPT", values_to = "PCT.SWEPT") %>%
-  ggplot(., mapping = aes(x = PCT.SWEPT)) +
-  theme_bw() + 
-  geom_density() +
-  facet_grid(pop.size~CHROM.SWEPT) + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  labs(x = "Percent of Strains Containing 'Swept' Chromosome")
-
 population.metrics.df %>%
   tidyr::pivot_longer(cols = c(I, IV, V, X), names_to = "CHROM.SWEPT", values_to = "PCT.SWEPT") %>%
   ggplot(., mapping = aes(x = PCT.SWEPT)) +
