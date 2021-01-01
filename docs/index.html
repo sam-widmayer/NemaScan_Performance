@@ -13,7 +13,6 @@
 
 <title>Home</title>
 
-<script src="site_libs/header-attrs-2.1/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
@@ -23,6 +22,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
@@ -34,7 +35,14 @@ div.section {
 }
 </style>
 
-
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -336,7 +344,7 @@ $(document).ready(function () {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2020-10-01
+<strong>Last updated:</strong> 2021-01-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -367,16 +375,16 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree7aa8f62dd944c9fe508e9d5a9c7b58db00cc2bd0targetblank7aa8f62a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/7aa8f62dd944c9fe508e9d5a9c7b58db00cc2bd0" target="_blank">7aa8f62</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreedfbfcd6a8a258b6865c5f2ff0ce8cfdf7a910959targetblankdfbfcd6a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/dfbfcd6a8a258b6865c5f2ff0ce8cfdf7a910959" target="_blank">dfbfcd6</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetree7aa8f62dd944c9fe508e9d5a9c7b58db00cc2bd0targetblank7aa8f62a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreedfbfcd6a8a258b6865c5f2ff0ce8cfdf7a910959targetblankdfbfcd6a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/7aa8f62dd944c9fe508e9d5a9c7b58db00cc2bd0" target="_blank">7aa8f62</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/dfbfcd6a8a258b6865c5f2ff0ce8cfdf7a910959" target="_blank">dfbfcd6</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -385,34 +393,56 @@ Note that you need to be careful to ensure that all relevant files for the analy
 Ignored files:
     Ignored:    .DS_Store
     Ignored:    .Rhistory
-    Ignored:    analysis/.DS_Store
-    Ignored:    code/.DS_Store
     Ignored:    data/.DS_Store
     Ignored:    output/.DS_Store
 
 Untracked files:
-    Untracked:  code/generate_strain_lists_swept.R
-    Untracked:  code/startup.R
-    Untracked:  code/susie.R
-    Untracked:  data/CelegansStrainData.tsv
-    Untracked:  data/Common_divergent_regions_clustered.tsv
-    Untracked:  data/Intermediate_divergent_regions_clustered.tsv
-    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData
-    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData
-    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData
-    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData
-    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_REDO.20200909.RData
-    Untracked:  data/NemaScan_Performance.CeNDR2020_cendr_sets.20200929.RData
-    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData
-    Untracked:  data/Rare_divergent_regions_clustered.tsv
-    Untracked:  data/all_susie_BF_hits.tsv
-    Untracked:  data/all_susie_hits.tsv
-    Untracked:  data/sweep_summary.tsv
-    Untracked:  output/susie.validation.csv
-    Untracked:  output/swept.by.chr.strain.lists.txt
-
-Unstaged changes:
-    Modified:   analysis/population.comparison.Rmd
+    Untracked:  Emodepside_cv.EXT_LD.plot.png
+    Untracked:  code/Gather_Population_Metrics.R
+    Untracked:  code/praziquantel.processing.R
+    Untracked:  data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData
+    Untracked:  data/NemaScan_Performance.Architecture.20201120.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.20201223.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.CI.50.20201224.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.group500.20201223.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.group500.CI.50.20201224.RData
+    Untracked:  data/NemaScan_Performance.Architecture.group500.20201124.RData
+    Untracked:  data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.20201230.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.HF.chr125.20201112.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Hard.Filtered.20201111.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.20201111.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.chr125.20201112.RData
+    Untracked:  data/NemaScan_Population_Metrics.Demography.SampleSize.Complete.Subsampled.20201229.RData
+    Untracked:  output/WB.figure.png
+    Untracked:  output/complete.subsampled.strains.txt
+    Untracked:  output/pr.curve.variant.set.png
+    Untracked:  output/prelim.fig.1.png
+    Untracked:  output/prelim.fig.2.png
+    Untracked:  output/report.html
+    Untracked:  output/subsampled.strains_20201225_n144_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n192_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n240_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n288_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n336_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n384_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n48_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n96_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n120_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n144_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n168_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n24_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n48_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n72_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n96_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n120_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n144_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n168_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n192_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n216_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n24_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n48_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n72_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n96_reps200.txt
 
 </code></pre>
 <p>
@@ -451,6 +481,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/dfbfcd6a8a258b6865c5f2ff0ce8cfdf7a910959/analysis/index.Rmd" target="_blank">dfbfcd6</a>
+</td>
+<td>
+Sam
+</td>
+<td>
+2021-01-01
+</td>
+<td>
+remove CeNDR set analysis from page
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/sam-widmayer/NemaScan_Performance/ed09ecc0d980252ea53e3663b427b60953b5f86c/docs/index.html" target="_blank">ed09ecc</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2020-10-01
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -701,7 +765,7 @@ Start workflowr project.
 <li>A <a href="powerprecisionh2.html">small overview</a> of mapping performance with a single QTL with a defined effect.</li>
 <li>A <a href="gamma.effects.html">more nuanced example</a> where there are a small collection of QTLs with effects that are distributed more closely to what we expect to see in nature.</li>
 <li>We assessed false-positive rates in this GWA pipeline, with a specific focus on how they can help us conceptualize <a href="FPR_CI.html">confidence intervals</a> and divergent regions and <a href="variant.set.comp.html">different types of variant sets</a> can affect mapping results</li>
-<li><em>C. elegans</em> strains from around the world have vastly different evolutionary histories, shaping genomic variation in different ways. We interrogated how <a href="population.comparison.html">population demography</a> affects GWA performance, and whether certain <a href="https://www.elegansvariation.org/strain/catalog">pre-baked strain sets</a>, in combination, offer <a href="cendr.sets.html">different benefits</a> for certain types of traits given a finite sampling capacity.</li>
+<li><em>C. elegans</em> strains from around the world have vastly different evolutionary histories, shaping genomic variation in different ways. We interrogated how <a href="population.comparison.html">population demography</a> affects GWA performance given a finite sampling capacity.</li>
 </ol>
 
 
@@ -719,15 +783,13 @@ footer is added to webpages before the MathJax javascript. -->
 
 
 
-
-
 </div>
 
 <script>
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();
