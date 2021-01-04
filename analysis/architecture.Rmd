@@ -20,8 +20,8 @@ require(data.table)
 ### Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-# setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
-setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
+setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
+# setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
 
 # Dual Algorithm Aggregated Mapping Results: Default settings: Group = 1000 bp, CI = +150 markers
 load(file = "data/NemaScan_Performance.Architecture.Mixed.20201223.RData") 
@@ -150,6 +150,7 @@ dat.group500.50.aggregate$group.size <- as.factor(500)
 dat.group500.50.aggregate$CI <- as.factor(50)
 #####
 
+# Combining iterations of grouping parameter and CI extension length
 dat <- dat.group1000.150.aggregate %>%
   dplyr::full_join(., dat.group500.150.aggregate) %>%
   dplyr::full_join(., dat.group1000.50.aggregate) %>%
@@ -207,118 +208,7 @@ dat.group1000.150.aggregate %>%
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
 
-```{r unique hits, eval=FALSE, include=FALSE}
-unique.hits <- dat.group1000.150 %>%
-  dplyr::filter(Detected == TRUE) %>%
-  dplyr::group_by(nQTL, h2, Rep, algorithm, group.size, CI) %>%
-  tidyr::nest()
-
-unique.hits.calc <- function(nQTL, Rep, h2, algorithm, group.size, CI, data){
-  check <- strsplit(data$sim, split = "_")[[1]]
-  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
-  data %>%
-    dplyr::mutate(n_unique_hits = length(unique(as.factor(data$peak_id))), 
-                  nQTL = nQTL, h2 = h2, group.size = group.size, CI = CI, Rep = Rep, algorithm = algorithm) %>%
-    dplyr::select(nQTL, h2, Rep, algorithm, group.size, CI, n_unique_hits) %>%
-    dplyr::filter(!duplicated(.))
-}
-unique.hits.dat <- purrr::pmap(.l = list(unique.hits$nQTL,
-                      unique.hits$Rep,
-                      unique.hits$h2,
-                      unique.hits$algorithm,
-                      unique.hits$group.size,
-                      unique.hits$CI,
-                      unique.hits$data),
-            .f = unique.hits.calc) %>%
-  Reduce(rbind,.)
-
-unique.hits.dat %>%
-  dplyr::group_by(nQTL, h2, algorithm, group.size, CI) %>%
-  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
-  `colnames<-`(c("nQTL","h2","algorithm","group.size","CI","mean","sd")) %>%
-  tidyr::unite("unique_hits", mean:sd, sep = " ± ") %>%
-  tidyr::pivot_wider(names_from = nQTL, values_from = unique_hits) %>%
-  as.data.frame()
-
-unique.hits.plot <- unique.hits.dat %>%
-  dplyr::group_by(nQTL, h2, algorithm, group.size, CI) %>%
-  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
-  `colnames<-`(c("nQTL","h2","algorithm","group.size","CI","mean","sd")) %>%
-  ggplot(., mapping = aes(x = group.size, y = mean, colour = nQTL)) + 
-  theme_bw() +
-  geom_point(position = position_dodge(width = 0.5)) +
-  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), 
-                position=position_dodge(width=0.5)) +
-  scale_colour_manual(values = nQTL.pal, name = "Number of Supporting QTL") +
-  facet_grid(algorithm~h2+CI) +  
-  theme(strip.text = element_text(size = 8),
-        legend.position = "top", 
-        panel.grid.minor = element_blank()) + 
-  scale_y_continuous(breaks = seq(0,8,1)) + 
-  labs(x = "Distance Between Grouped QTL",
-       y = "Unique Detection Intervals")
-
-unique.true.positives <- dat.group1000.150 %>%
-  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
-  dplyr::group_by(nQTL, h2, Rep, algorithm, group.size, CI) %>%
-  tidyr::nest()
-
-unique.peak.calc <- function(nQTL, Rep, h2, algorithm, group.size, CI, data){
-  check <- strsplit(data$sim, split = "_")[[1]]
-  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
-  data %>%
-    dplyr::mutate(peak_id = as.factor(peak_id)) %>%
-    dplyr::group_by(peak_id) %>%
-    dplyr::summarise(n()) %>%
-    dplyr::select(`n()`) %>%
-    as.vector() %>%
-    dplyr::mutate(nQTL = nQTL, h2 = h2, Rep = Rep, algorithm = algorithm, group.size = group.size, CI = CI)
-}
-unique.true.positives.dat <- purrr::pmap(.l = list(unique.true.positives$nQTL,
-                      unique.true.positives$Rep,
-                      unique.true.positives$h2,
-                      unique.true.positives$algorithm,
-                      unique.true.positives$group.size,
-                      unique.true.positives$CI,
-                      unique.true.positives$data),
-            .f = unique.peak.calc) %>%
-  Reduce(rbind,.)
-
-unique.true.positives.dat <- unique.true.positives.dat %>%
-  dplyr::mutate(algorithm = as.factor(algorithm))
-levels(unique.true.positives.dat$algorithm) <- c("INBRED","LOCO")
-
-totals <- unique.true.positives.dat %>%
-  dplyr::rename(QTL_per_peak = `n()`) %>%
-  dplyr::group_by(h2, algorithm, group.size, CI) %>%
-  dplyr::summarise(n())
-unique.true.positives.dat <- unique.true.positives.dat %>%
-  dplyr::mutate(algorithm = as.factor(algorithm))
-
-QTL_per_peak_plot <- unique.true.positives.dat %>%
-  dplyr::mutate(QTL_per_peak = as.numeric(`n()`)) %>%
-  dplyr::group_by(nQTL, h2, algorithm, group.size, CI, QTL_per_peak) %>%
-  dplyr::summarise(n()) %>%
-  dplyr::rename(freq = `n()`) %>%
-  dplyr::full_join(.,totals) %>%
-  dplyr::mutate(pct = (freq/`n()`)*100) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(QTL_per_peak = if_else(condition = (QTL_per_peak > 4),
-                                       true = "5+",
-                                       false = as.character(QTL_per_peak))) %>%
-  ggplot(., mapping = aes(x = QTL_per_peak, y = pct, fill = nQTL)) +
-  theme_bw() +
-  geom_col(position = "stack") + 
-  scale_fill_manual(values = nQTL.pal, name = "Number of Supporting QTL") +
-  facet_grid(algorithm+group.size~h2+CI) +  
-  theme(strip.text = element_text(size = 8),
-        legend.position = "top", 
-        panel.grid.minor = element_blank()) +
-  labs(x = "Simulated QTL per Unique True Positive Detection Interval",
-       y = "Simulated Regimes (%)")
-```
-
-```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
+```{r default settings PR curve, echo=FALSE, fig.height=6, fig.width=9}
 pr.curve <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, nQTL, algorithm) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
@@ -336,7 +226,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, colour = nQTL)) +
   labs(x = "Recall", y = "Precision")
 ```
 
-```{r metrics, echo=FALSE}
+```{r default settings metrics, echo=FALSE}
 options(dplyr.summarise.inform = FALSE)
 power <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
@@ -377,61 +267,98 @@ summarized <- power %>%
 
 ```{r plots, echo=FALSE}
 ## PLOTS
-power.plot <- summarized %>%
+sd.POWER <- dat.group1000.150.aggregate %>%
   dplyr::filter(algorithm == "MIXED") %>%
-  ggplot(., mapping = aes(x = nQTL, y = Power, colour = h2, 
+  droplevels() %>%
+  dplyr::group_by(h2, algorithm, nQTL, group.size, CI, Rep) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power") %>%
+  dplyr::group_by(algorithm, h2, nQTL, group.size, CI) %>%
+  dplyr::summarise(mean = mean(.estimate),
+                   sd = sd(.estimate)) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                nQTL = as.factor(nQTL),
+                ymax = if_else(condition = b > 1, 
+                             true = 1-mean, 
+                             false = sd),
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::select(-a,-b)
+
+sd.FDR <- dat.group1000.150.aggregate %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::group_by(h2, algorithm, nQTL, group.size, CI, Rep) %>%
+  yardstick::precision(truth = Simulated, estimate = Detected) %>%
+  dplyr::select(-.metric, -.estimator) %>%
+  dplyr::mutate(FDR = 1-.estimate) %>%
+  dplyr::select(-.estimate) %>%
+  dplyr::filter(!is.na(FDR)) %>%
+  dplyr::group_by(algorithm, h2, nQTL, group.size, CI) %>%
+  dplyr::summarise(mean = mean(FDR),
+                   sd = sd(FDR)) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                nQTL = as.factor(nQTL),
+                ymax = if_else(condition = b > 1,
+                             true = 1-mean,
+                             false = sd),
+                ymin = if_else(condition = a < 0,
+                             true = (0-mean)*-1,
+                             false = sd)) %>%
+  dplyr::select(-a,-b)
+
+
+power.plot <- sd.POWER %>%
+  ggplot(., mapping = aes(x = nQTL, y = mean, colour = h2, 
                           group = interaction(h2,algorithm))) +
   theme_bw() +
-  geom_point() +
-  # geom_line(aes(linetype = algorithm)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  geom_errorbar(data = sd.POWER,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin),
+                width = 0.2,
+                position=position_dodge(width=0.2)) + 
   geom_line() +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
-  # facet_grid(group.size ~ CI) + 
   ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
         panel.grid.minor = element_blank()) +
-  labs(x = "Number of Supporting QTL")
+  labs(x = "Number of Supporting QTL",
+       y = "Power")
+power.plot
 
-precision.plot <- summarized %>%
-  dplyr::filter(algorithm == "MIXED") %>%
-  ggplot(., mapping = aes(x = nQTL, y = Precision, colour = h2, 
-                          group = interaction(h2,algorithm))) +
-  theme_bw() +
-  geom_point() +
-  geom_line(aes(linetype = algorithm)) +
-  scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
-  scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
-  # scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
-  ylim(c(0,1)) + 
-  theme(strip.text = element_text(size = 8),
-        legend.position = "top",
-        panel.grid.minor = element_blank()) +
-  labs(x = "Number of Supporting QTL")
 
-FDR.plot <- summarized %>%
-  dplyr::filter(algorithm == "MIXED") %>%
-  ggplot(., mapping = aes(x = nQTL, y = FDR, colour = h2, group = interaction(h2,algorithm))) +
+FDR.plot <- sd.FDR %>%
+  ggplot(., mapping = aes(x = nQTL, y = mean, colour = h2, group = interaction(h2,algorithm))) +
   theme_bw() +
-  geom_point() +
+  geom_point(position=position_dodge(width=0.2)) +
+  geom_errorbar(data = sd.FDR,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin),
+                width = 0.2,
+                position=position_dodge(width=0.2)) + 
   # geom_line(aes(linetype = algorithm)) +
-  geom_line() +
+  geom_line(position=position_dodge(width=0.2)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   scale_alpha_manual(values = c(1,0.5,0.5), name = "Evaluation Method") +
   # scale_linetype_manual(values = c(3,2,1), name = "Evaluation Method") +
   # facet_grid(group.size ~ CI) + 
-  ylim(c(0,1)) + 
+  ylim(c(0,1)) +
   theme(strip.text = element_text(size = 8),
         legend.position = "right",
         panel.grid.minor = element_blank()) +
-  labs(x = "Number of Supporting QTL")
+  labs(x = "Number of Supporting QTL",
+       y = "FDR")
+FDR.plot
 
 plots <- cowplot::plot_grid(power.plot+ theme(legend.position = "none"),
                             FDR.plot+ theme(legend.position = "none"),
                             nrow = 1,
                             labels = "AUTO", align = "hv", axis = "b")
-# nQTL.legend <- cowplot::get_legend(QTL_per_peak_plot)
+
 h2.legend <- cowplot::get_legend(power.plot)
 legends <- cowplot::plot_grid(h2.legend, ncol = 1)
 prelim.fig.2 <- cowplot::plot_grid(plots, 
@@ -564,4 +491,115 @@ for(i in 1:length(FPR.comp.CI$data)){
   print(FPR.comp.CI$data[[i]])
 }
 
+```
+
+```{r unique hits, eval=FALSE, include=FALSE}
+unique.hits <- dat.group1000.150 %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::group_by(nQTL, h2, Rep, algorithm, group.size, CI) %>%
+  tidyr::nest()
+
+unique.hits.calc <- function(nQTL, Rep, h2, algorithm, group.size, CI, data){
+  check <- strsplit(data$sim, split = "_")[[1]]
+  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
+  data %>%
+    dplyr::mutate(n_unique_hits = length(unique(as.factor(data$peak_id))), 
+                  nQTL = nQTL, h2 = h2, group.size = group.size, CI = CI, Rep = Rep, algorithm = algorithm) %>%
+    dplyr::select(nQTL, h2, Rep, algorithm, group.size, CI, n_unique_hits) %>%
+    dplyr::filter(!duplicated(.))
+}
+unique.hits.dat <- purrr::pmap(.l = list(unique.hits$nQTL,
+                      unique.hits$Rep,
+                      unique.hits$h2,
+                      unique.hits$algorithm,
+                      unique.hits$group.size,
+                      unique.hits$CI,
+                      unique.hits$data),
+            .f = unique.hits.calc) %>%
+  Reduce(rbind,.)
+
+unique.hits.dat %>%
+  dplyr::group_by(nQTL, h2, algorithm, group.size, CI) %>%
+  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
+  `colnames<-`(c("nQTL","h2","algorithm","group.size","CI","mean","sd")) %>%
+  tidyr::unite("unique_hits", mean:sd, sep = " ± ") %>%
+  tidyr::pivot_wider(names_from = nQTL, values_from = unique_hits) %>%
+  as.data.frame()
+
+unique.hits.plot <- unique.hits.dat %>%
+  dplyr::group_by(nQTL, h2, algorithm, group.size, CI) %>%
+  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
+  `colnames<-`(c("nQTL","h2","algorithm","group.size","CI","mean","sd")) %>%
+  ggplot(., mapping = aes(x = group.size, y = mean, colour = nQTL)) + 
+  theme_bw() +
+  geom_point(position = position_dodge(width = 0.5)) +
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), 
+                position=position_dodge(width=0.5)) +
+  scale_colour_manual(values = nQTL.pal, name = "Number of Supporting QTL") +
+  facet_grid(algorithm~h2+CI) +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) + 
+  scale_y_continuous(breaks = seq(0,8,1)) + 
+  labs(x = "Distance Between Grouped QTL",
+       y = "Unique Detection Intervals")
+
+unique.true.positives <- dat.group1000.150 %>%
+  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
+  dplyr::group_by(nQTL, h2, Rep, algorithm, group.size, CI) %>%
+  tidyr::nest()
+
+unique.peak.calc <- function(nQTL, Rep, h2, algorithm, group.size, CI, data){
+  check <- strsplit(data$sim, split = "_")[[1]]
+  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
+  data %>%
+    dplyr::mutate(peak_id = as.factor(peak_id)) %>%
+    dplyr::group_by(peak_id) %>%
+    dplyr::summarise(n()) %>%
+    dplyr::select(`n()`) %>%
+    as.vector() %>%
+    dplyr::mutate(nQTL = nQTL, h2 = h2, Rep = Rep, algorithm = algorithm, group.size = group.size, CI = CI)
+}
+unique.true.positives.dat <- purrr::pmap(.l = list(unique.true.positives$nQTL,
+                      unique.true.positives$Rep,
+                      unique.true.positives$h2,
+                      unique.true.positives$algorithm,
+                      unique.true.positives$group.size,
+                      unique.true.positives$CI,
+                      unique.true.positives$data),
+            .f = unique.peak.calc) %>%
+  Reduce(rbind,.)
+
+unique.true.positives.dat <- unique.true.positives.dat %>%
+  dplyr::mutate(algorithm = as.factor(algorithm))
+levels(unique.true.positives.dat$algorithm) <- c("INBRED","LOCO")
+
+totals <- unique.true.positives.dat %>%
+  dplyr::rename(QTL_per_peak = `n()`) %>%
+  dplyr::group_by(h2, algorithm, group.size, CI) %>%
+  dplyr::summarise(n())
+unique.true.positives.dat <- unique.true.positives.dat %>%
+  dplyr::mutate(algorithm = as.factor(algorithm))
+
+QTL_per_peak_plot <- unique.true.positives.dat %>%
+  dplyr::mutate(QTL_per_peak = as.numeric(`n()`)) %>%
+  dplyr::group_by(nQTL, h2, algorithm, group.size, CI, QTL_per_peak) %>%
+  dplyr::summarise(n()) %>%
+  dplyr::rename(freq = `n()`) %>%
+  dplyr::full_join(.,totals) %>%
+  dplyr::mutate(pct = (freq/`n()`)*100) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(QTL_per_peak = if_else(condition = (QTL_per_peak > 4),
+                                       true = "5+",
+                                       false = as.character(QTL_per_peak))) %>%
+  ggplot(., mapping = aes(x = QTL_per_peak, y = pct, fill = nQTL)) +
+  theme_bw() +
+  geom_col(position = "stack") + 
+  scale_fill_manual(values = nQTL.pal, name = "Number of Supporting QTL") +
+  facet_grid(algorithm+group.size~h2+CI) +  
+  theme(strip.text = element_text(size = 8),
+        legend.position = "top", 
+        panel.grid.minor = element_blank()) +
+  labs(x = "Simulated QTL per Unique True Positive Detection Interval",
+       y = "Simulated Regimes (%)")
 ```
