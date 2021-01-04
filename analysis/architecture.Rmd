@@ -329,7 +329,7 @@ power.plot <- sd.POWER %>%
         panel.grid.minor = element_blank()) +
   labs(x = "Number of Supporting QTL",
        y = "Power")
-power.plot
+
 
 
 FDR.plot <- sd.FDR %>%
@@ -352,7 +352,7 @@ FDR.plot <- sd.FDR %>%
         panel.grid.minor = element_blank()) +
   labs(x = "Number of Supporting QTL",
        y = "FDR")
-FDR.plot
+
 
 plots <- cowplot::plot_grid(power.plot+ theme(legend.position = "none"),
                             FDR.plot+ theme(legend.position = "none"),
