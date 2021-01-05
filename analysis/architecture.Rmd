@@ -392,7 +392,7 @@ for(i in 1:length(power.comp.algorithm$data)){
   print(power.comp.algorithm$data[[i]])
 }
 
-power.comp.group.size <- dat.group1000.150.aggregate %>%
+power.comp.group.size <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power") %>%
