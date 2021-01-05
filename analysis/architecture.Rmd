@@ -167,7 +167,7 @@ dat$CI <- factor(dat$CI, levels = c(50,150))
 * ###### Number of Replicates per Regime: ```r max(as.numeric(dat$Rep))```
 * ###### QTL Effect Range: ```r levels(as.factor(dat$effect_range))```
 
-```{r simulated QTL locations, echo=FALSE}
+```{r simulated QTL locations, echo=FALSE, warning=FALSE}
 h2.pal <- wes_palette("Darjeeling1", 4)[c(1,4,3,2)]
 nQTL.pal <- wes_palette("Darjeeling2", 4)[c(3,1,4,2)]
 options(dplyr.summarise.inform = FALSE)
@@ -208,7 +208,7 @@ dat.group1000.150.aggregate %>%
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
 
-```{r default settings PR curve, echo=FALSE, fig.height=6, fig.width=9}
+```{r default settings PR curve, echo=FALSE, fig.height=6, fig.width=9, warning=FALSE}
 pr.curve <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, nQTL, algorithm) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
@@ -226,7 +226,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, colour = nQTL)) +
   labs(x = "Recall", y = "Precision")
 ```
 
-```{r default settings metrics, echo=FALSE}
+```{r default settings metrics, echo=FALSE, warning=FALSE}
 options(dplyr.summarise.inform = FALSE)
 power <- dat.group1000.150.aggregate %>%
   dplyr::group_by(h2, algorithm, nQTL, group.size, CI) %>%
@@ -265,7 +265,7 @@ summarized <- power %>%
                 .keep = "unused")
 ```
 
-```{r plots, echo=FALSE}
+```{r plots, echo=FALSE, warning=FALSE}
 ## PLOTS
 sd.POWER <- dat.group1000.150.aggregate %>%
   dplyr::filter(algorithm == "MIXED") %>%
@@ -397,6 +397,7 @@ power.comp.group.size <- dat %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power") %>%
   tidyr::pivot_wider(names_from = group.size, values_from = .estimate) %>%
+  dplyr::mutate(grouping.diff = paste0(round((`1000`-`500`)*100, 2), "%")) %>%
   dplyr::select(-.metric, -.estimator) %>%
   dplyr::arrange(nQTL) %>%
   dplyr::group_by(algorithm, CI) %>%
@@ -413,6 +414,7 @@ power.comp.CI <- dat %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
   dplyr::mutate(.metric = "Power") %>%
   tidyr::pivot_wider(names_from = CI, values_from = .estimate) %>%
+  dplyr::mutate(CI.diff = paste0(round((`150`-`50`)*100, 2), "%")) %>%
   dplyr::select(-.metric, -.estimator) %>%
   dplyr::arrange(nQTL) %>%
   dplyr::group_by(algorithm, group.size) %>%
@@ -454,6 +456,7 @@ FDR.comp.group.size <- dat %>%
   dplyr::select(-.estimate) %>%
   dplyr::filter(!is.na(FDR)) %>%
   tidyr::pivot_wider(names_from = group.size, values_from = FDR) %>%
+  dplyr::mutate(grouping.diff = paste0(round((`1000`-`500`)*100, 2), "%")) %>%
   dplyr::group_by(algorithm, CI) %>%
   tidyr::nest()
 
@@ -471,6 +474,7 @@ FDR.comp.CI <- dat %>%
   dplyr::select(-.estimate) %>%
   dplyr::filter(!is.na(FDR)) %>%
   tidyr::pivot_wider(names_from = CI, values_from = FDR) %>%
+  dplyr::mutate(CI.diff = paste0(round((`150`-`50`)*100, 2), "%")) %>%
   dplyr::group_by(algorithm, group.size) %>%
   tidyr::nest()
 
@@ -482,38 +486,46 @@ for(i in 1:length(FDR.comp.CI$data)){
 
 ```
 
-```{r unique hits, eval=FALSE, include=FALSE}
-unique.hits <- dat.group1000.150 %>%
-  dplyr::filter(Detected == TRUE) %>%
-  dplyr::group_by(nQTL, h2, Rep, algorithm, group.size, CI) %>%
+```{r unique hits default settings, eval=FALSE, include=FALSE}
+unique.hits <- dat.group1000.150.aggregate %>%
+  dplyr::filter(algorithm == "MIXED",
+                Detected == TRUE) %>%
+  dplyr::group_by(nQTL, h2, Rep) %>%
   tidyr::nest()
 
-unique.hits.calc <- function(nQTL, Rep, h2, algorithm, group.size, CI, data){
+unique.hits.calc <- function(nQTL, Rep, h2, data){
   check <- strsplit(data$sim, split = "_")[[1]]
-  # print(paste(nQTL == check[1], Rep == check[2], h2 == check[3]))
-  data %>%
+  out <- data %>%
     dplyr::mutate(n_unique_hits = length(unique(as.factor(data$peak_id))), 
-                  nQTL = nQTL, h2 = h2, group.size = group.size, CI = CI, Rep = Rep, algorithm = algorithm) %>%
-    dplyr::select(nQTL, h2, Rep, algorithm, group.size, CI, n_unique_hits) %>%
+                  nQTL = nQTL, h2 = h2, Rep = Rep) %>%
+    dplyr::select(nQTL, h2, Rep, n_unique_hits) %>%
     dplyr::filter(!duplicated(.))
+  
+  out$n.artifacts <- table(data$Simulated)[[2]]
+  out
 }
 unique.hits.dat <- purrr::pmap(.l = list(unique.hits$nQTL,
-                      unique.hits$Rep,
-                      unique.hits$h2,
-                      unique.hits$algorithm,
-                      unique.hits$group.size,
-                      unique.hits$CI,
-                      unique.hits$data),
-            .f = unique.hits.calc) %>%
+                                         unique.hits$Rep,
+                                         unique.hits$h2,
+                                         unique.hits$data),
+                               .f = unique.hits.calc) %>%
   Reduce(rbind,.)
 
+print("Average Number of Unique GWA Hits")
 unique.hits.dat %>%
-  dplyr::group_by(nQTL, h2, algorithm, group.size, CI) %>%
-  dplyr::summarise(round(mean(n_unique_hits), digits = 2), round(sd(n_unique_hits),digits = 2)) %>%
-  `colnames<-`(c("nQTL","h2","algorithm","group.size","CI","mean","sd")) %>%
+  dplyr::group_by(nQTL, h2) %>%
+  dplyr::summarise(mean = round(mean(n_unique_hits), digits = 2), 
+                   sd = round(sd(n_unique_hits),digits = 2)) %>%
   tidyr::unite("unique_hits", mean:sd, sep = " ± ") %>%
-  tidyr::pivot_wider(names_from = nQTL, values_from = unique_hits) %>%
-  as.data.frame()
+  tidyr::pivot_wider(names_from = nQTL, values_from = unique_hits)
+
+print("Average Fraction of Artifact GWA Hits")
+unique.hits.dat %>%
+  dplyr::group_by(nQTL, h2) %>%
+  dplyr::summarise(mean = round(mean(n.artifacts), digits = 2), 
+                   sd = round(sd(n.artifacts),digits = 2)) %>%
+  tidyr::unite("unique_hits", mean:sd, sep = " ± ") %>%
+  tidyr::pivot_wider(names_from = nQTL, values_from = unique_hits)
 
 unique.hits.plot <- unique.hits.dat %>%
   dplyr::group_by(nQTL, h2, algorithm, group.size, CI) %>%
@@ -532,6 +544,12 @@ unique.hits.plot <- unique.hits.dat %>%
   scale_y_continuous(breaks = seq(0,8,1)) + 
   labs(x = "Distance Between Grouped QTL",
        y = "Unique Detection Intervals")
+
+
+
+
+
+
 
 unique.true.positives <- dat.group1000.150 %>%
   dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
