@@ -584,7 +584,7 @@ power.plot.X <-summarized.X %>%
   labs(y = "Power",
        x = "Sample Size")
 
-cowplot::plot_grid(power.plot.I, power.plot.IV, power.plot.V, power.plot.X, nrow = 1)
+cowplot::plot_grid(power.plot.I, power.plot.IV, power.plot.V, power.plot.X, nrow = 2)
 ```
 
 ## Divergent Regions
