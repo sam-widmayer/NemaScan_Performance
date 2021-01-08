@@ -24,8 +24,8 @@ require(ggbeeswarm)
 ## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-# setwd("~/Documents/projects/NemaScan_Performance/")
-setwd("~/Documents/AndersenLab/NemaScan_Performance/")
+setwd("~/Documents/projects/NemaScan_Performance/")
+# setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 # load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData")
 load(file = "data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.20201230.RData")
 dat.complete <- simulation.metrics.df %>%
@@ -423,6 +423,9 @@ summarized %>%
   dplyr::summarise(median(value)) %>%
   tidyr::pivot_wider(names_from = stat, values_from = `median(value)`)
 
+
+
+
 prAUC.plot.I <- summarized.I %>%
   dplyr::select(-.estimator) %>%
   ggplot(., mapping = aes(x = as.factor(pop.size), y = `Precision-Recall_AUC`, 
@@ -433,10 +436,12 @@ prAUC.plot.I <- summarized.I %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome I") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr I") + 
   labs(y = "Precision-Recall_AUC",
        x = "Sample Size")
 
@@ -450,10 +455,12 @@ prAUC.plot.IV <-summarized.IV %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome IV") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr IV") + 
   labs(y = "Precision-Recall_AUC",
        x = "Sample Size")
 
@@ -468,10 +475,12 @@ prAUC.plot.V <-summarized.V %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome V") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr V") + 
   labs(y = "Precision-Recall_AUC",
        x = "Sample Size")
 
@@ -485,14 +494,16 @@ prAUC.plot.X <-summarized.X %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome X") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr X") + 
   labs(y = "Precision-Recall_AUC",
        x = "Sample Size")
 
-cowplot::plot_grid(prAUC.plot.I, prAUC.plot.IV, prAUC.plot.V, prAUC.plot.X, nrow = 1)
+cowplot::plot_grid(prAUC.plot.I, prAUC.plot.IV, prAUC.plot.V, prAUC.plot.X, nrow = 2)
 
 
 
@@ -506,10 +517,12 @@ power.plot.I <- summarized.I %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome I") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr I") + 
   labs(y = "Power",
        x = "Sample Size")
 
@@ -523,10 +536,12 @@ power.plot.IV <-summarized.IV %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome IV") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr IV") + 
   labs(y = "Power",
        x = "Sample Size")
 
@@ -541,10 +556,12 @@ power.plot.V <-summarized.V %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome V") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr V") + 
   labs(y = "Power",
        x = "Sample Size")
 
@@ -558,10 +575,12 @@ power.plot.X <-summarized.X %>%
   geom_line() + 
   ylim(c(0,1)) + 
   scale_colour_brewer(palette = "PuBu", name = "Swept Chromosome X") + 
-  theme(legend.title.align = 0.5,
-        legend.direction = "vertical",
-        legend.box.just = "center",
-        legend.position = "top") + 
+  # theme(legend.title.align = 0.5,
+  #       legend.direction = "vertical",
+  #       legend.box.just = "center",
+  #       legend.position = "top") + 
+  theme(legend.position = "none") + 
+  ggtitle("Chr X") + 
   labs(y = "Power",
        x = "Sample Size")
 
