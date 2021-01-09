@@ -90,7 +90,7 @@ dat %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL)) %>%
   ggplot(., mapping = aes(x = Simulated.QTL.VarExp, fill = nQTL)) +
-  theme_minimal() + 
+  theme_bw() + 
   geom_density() + 
   scale_fill_manual(values = nationalparkcolors::park_palettes$RockyMountains[c(1,2)]) + 
   facet_grid(nQTL~.) + 
