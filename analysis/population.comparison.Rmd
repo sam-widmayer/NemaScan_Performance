@@ -387,7 +387,7 @@ ggplot(B, mapping = aes(x = as.factor(pop.size), y = Percent.Divergent.QTL,
   scale_fill_manual(values = pop.group.pal, name = "Population Group") + 
   scale_colour_manual(values = pop.group.pal, name = "Population Group") + 
   theme(legend.position = "top") + 
-  facet_grid(Divergent.Region.Type~., scales = "free") +
+  facet_grid(.~Divergent.Region.Type, scales = "free") +
   labs(x = "Sample Size",
        y = "Percent of QTL Within Divergent Regions")
 
