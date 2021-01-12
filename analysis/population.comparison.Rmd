@@ -620,31 +620,29 @@ dat.population.features.divergence %>%
 
 
 
-
-
-resolution <- dat.curated %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set, population.group) %>%
-  dplyr::group_by(strain_set, population.group) %>%
-  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
-                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
-
-
-summarized <- power %>%
-  dplyr::full_join(., precision) %>%
-  dplyr::full_join(., pr_auc) %>%
-  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
-  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
-                FDR = 1-Precision) %>%
-  dplyr::left_join(.,resolution) %>%
-  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
-                median.interval.Mb = `median(interval_size)`/1000000,
-                sd.interval.Mb = `sd(interval_size)`/1000000, 
-                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
-                median.PVE = `median(Simulated.QTL.VarExp)`*100,
-                sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
-                .keep = "unused") %>%
-  dplyr::left_join(., pop.sizes)
+# resolution <- dat.curated %>%
+#   dplyr::filter(Simulated == TRUE) %>%
+#   dplyr::filter(!is.na(var.exp)) %>%
+#   dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, Simulated.QTL.VarExp, var.exp, strain_set, population.group) %>%
+#   dplyr::group_by(strain_set, population.group) %>%
+#   dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
+#                    mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
+# 
+# 
+# summarized <- power %>%
+#   dplyr::full_join(., precision) %>%
+#   dplyr::full_join(., pr_auc) %>%
+#   tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
+#   dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
+#                 FDR = 1-Precision) %>%
+#   dplyr::left_join(.,resolution) %>%
+#   dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
+#                 median.interval.Mb = `median(interval_size)`/1000000,
+#                 sd.interval.Mb = `sd(interval_size)`/1000000, 
+#                 mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
+#                 median.PVE = `median(Simulated.QTL.VarExp)`*100,
+#                 sd.PVE = `sd(Simulated.QTL.VarExp)`*100,
+#                 .keep = "unused") %>%
+#   dplyr::left_join(., pop.sizes)
 ```
 
