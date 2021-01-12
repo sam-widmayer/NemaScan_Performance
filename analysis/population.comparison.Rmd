@@ -395,7 +395,7 @@ ggplot(B, mapping = aes(x = as.factor(pop.size), y = Percent.Divergent.QTL,
 
 ## Performance
 
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE}
 pop.size <- dat.population.features.divergence %>%
   dplyr::select(strain_set, population.group, pop.size) %>%
   dplyr::filter(!duplicated(.))
@@ -623,7 +623,7 @@ dat.population.features.divergence %>%
 
 ```
 
-```{r find.comparable.mappings, eval=FALSE, include=FALSE}
+```{r find.comparable.mappings, echo=FALSE, message=FALSE, warning=FALSE}
 n = 48
 
 power <- dat.population.features.divergence %>%
