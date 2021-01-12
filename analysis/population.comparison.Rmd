@@ -19,6 +19,7 @@ require(GenomicRanges)
 require(cowplot)
 require(workflowr)
 require(ggbeeswarm)
+require(wesanderson)
 ```
 
 ## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
