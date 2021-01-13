@@ -123,8 +123,10 @@ population.features <- population.features.complete %>%
   dplyr::full_join(., population.features.unswept) %>%
   dplyr::filter(strain_set %in% dat.curated$strain_set)
 
+#######################
+## Haplotype Sharing ##
+#######################
 
-# Haplotype Sharing
 hapshare.nested <- population.features %>%
   dplyr::select(strain_set, population.group, contains("hapshare")) %>%
   tidyr::pivot_longer(cols = contains("hapshare"), names_to = "CHROM.HAPSHARE") %>%
@@ -145,7 +147,10 @@ population.hapshare.quantiles <- pmap(.l = list(hapshare.nested$data,
   tidyr::pivot_wider(names_from = c(stat, chrom), values_from = c(value, quintile)) %>%
   dplyr::select(strain_set, population.group, contains("quintile"))
 
-# Chromosome Sweptness Metadata
+###################################
+## Chromosome Sweptness Metadata ##
+###################################
+
 chrom.swept.nested <- population.features %>%
   dplyr::select(strain_set, population.group, I, IV, V, X) %>%
     tidyr::pivot_longer(cols = c(I, IV, V, X), 
@@ -233,6 +238,53 @@ dat.population.features.divergence <- dat.population.features %>%
                                    yes = "Divergent", 
                                    no = "Non-Divergent"))
 
+
+####################
+## ARMS & CENTERS ##
+####################
+genome.borders <- data.table::fread("data/genome.bed.tsv")
+genome.borders$chr <- seq(1,6,1)
+genome.borders <- genome.borders %>%
+  dplyr::rename(CHROM = chr, startPOS = start, endPOS = stop)
+
+arms.centers <- data.table::fread("data/ARMS_CENTERS.tsv") %>%
+  dplyr::rename(CHROM = V1, startPOS = V2, endPOS = V3, chrom.region = V4) %>%
+  dplyr::mutate(orientation = rep(c("LEFT","CENTER","RIGHT"), 6),
+                CHROM = as.factor(CHROM))
+levels(arms.centers$CHROM) <- c(seq(1,6))
+for(i in 1:nrow(arms.centers)){
+  if(arms.centers[i,]$orientation == "LEFT"){
+    arms.centers[i,]$startPOS <- 0
+  } else if(arms.centers[i,]$orientation == "RIGHT"){
+    arms.centers[i,]$endPOS <- genome.borders %>%
+      dplyr::filter(CHROM == arms.centers[i,]$CHROM) %>%
+      dplyr::select(endPOS) %>% as.numeric()
+  } else {
+    next
+  }
+}
+arms.centers.clean <- arms.centers %>%
+  tidyr::unite("CHROM.REGION",c(orientation, chrom.region)) %>%
+  dplyr::mutate(CHROM.REGION = if_else(CHROM.REGION == "CENTER_CENTER",
+                                       true = "CENTER", 
+                                       false = CHROM.REGION))
+
+arms.centers.gr <- GenomicRanges::GRanges(seqnames = arms.centers.clean$CHROM, 
+                                         ranges = IRanges(start = arms.centers.clean$startPOS, 
+                                                          end = arms.centers.clean$endPOS),
+                                         CHROM.REGION = arms.centers.clean$CHROM.REGION)
+
+arm.center.QTL <- IRanges::findOverlapPairs(all.gr, arms.centers.gr) %>%
+  data.frame() %>%
+  dplyr::select(first.QTL, first.X.seqnames,  second.CHROM.REGION) %>%
+  `colnames<-`(c("QTL","CHROM","CHROM.REGION"))
+
+
+dat.population.features.divergence <- dat.population.features.divergence %>%
+  dplyr::left_join(., arm.center.QTL) %>%
+  dplyr::mutate(CHROM.REGION = as.factor(CHROM.REGION))
+levels(dat.population.features.divergence$CHROM.REGION) <- c("Center","Left Arm", "Right Arm")
+dat.population.features.divergence$CHROM.REGION <- factor(dat.population.features.divergence$CHROM.REGION, levels = c("Left Arm","Center","Right Arm"))
 ```
 
 ## Simulation Parameters
@@ -287,6 +339,25 @@ dat.population.features.divergence %>%
   theme(legend.position = "top") + 
   labs(x = "Variance Explained by Simulated QTL (%)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
+
+dat.population.features.divergence %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL), 
+                !is.na(CHROM.REGION)) %>%
+  dplyr::group_by(CHROM.REGION, pop.size, population.group, CHROM) %>%
+  dplyr::summarise(n()) %>%
+  ggplot(., mapping = aes(x = as.factor(pop.size), y = `n()`, fill = population.group)) + 
+  theme_bw() + 
+  geom_col() + 
+  facet_grid(CHROM ~ CHROM.REGION, scales = "free") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        legend.position = "top") + 
+  scale_fill_manual(values = pop.group.pal, name = "Population Group") + 
+  labs(x = "Sample Size",
+       y = "Number of Simulated QTL")
+  
+
 
 dat.population.features.divergence %>%
   dplyr::select(strain_set, population.group, pop.size) %>%
@@ -616,39 +687,37 @@ dat.population.features.divergence %>%
   ylim(c(0,1)) + 
   labs(x = "Recall", y = "Precision")
   
-
-
-
-
-
 ```
 
 ```{r find.comparable.mappings, echo=FALSE, message=FALSE, warning=FALSE}
-n = 48
+
+################
+## STRAIN SET ##
+################
 
 power <- dat.population.features.divergence %>%
-  # dplyr::filter(pop.size == n) %>%
+  dplyr::filter(!is.na(CHROM.REGION)) %>%
   dplyr::group_by(pop.size, population.group, strain_set) %>%
   yardstick::sens(Simulated, Detected) %>%
   dplyr::rename(Power = .estimate) %>%
   dplyr::select(-c(.metric,.estimator))
 
 precision <- dat.population.features.divergence %>%
-  # dplyr::filter(pop.size == n) %>%
+  dplyr::filter(!is.na(CHROM.REGION)) %>%
   dplyr::group_by(pop.size, population.group, strain_set) %>%
   yardstick::precision(Simulated, Detected) %>%
   dplyr::rename(Precision = .estimate)%>%
   dplyr::select(-c(.metric,.estimator))
 
 pr_auc <- dat.population.features.divergence %>%
-  # dplyr::filter(pop.size == n) %>%
+  dplyr::filter(!is.na(CHROM.REGION)) %>%
   dplyr::group_by(pop.size, population.group, strain_set) %>%
   yardstick::pr_auc(Simulated, log10p) %>%
   dplyr::rename(PR_AUC = .estimate)%>%
   dplyr::select(-c(.metric,.estimator))
 
 resolution <- dat.population.features.divergence  %>%
-  # dplyr::filter(pop.size == n) %>%
+  dplyr::filter(!is.na(CHROM.REGION)) %>%
   dplyr::filter(Detected == TRUE) %>%
   dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, 
                 Simulated.QTL.VarExp, var.exp, pop.size, population.group, strain_set) %>%
@@ -676,5 +745,87 @@ summarized %>%
   labs(x = "Sample Size",
        y = "Mean Region of Interest Width (Mb)")
 
-```
 
+
+#######################
+## CHROMOSOME REGION ##
+#######################
+
+power <- dat.population.features.divergence %>%
+  dplyr::filter(!is.na(CHROM.REGION)) %>%
+  dplyr::group_by(pop.size, population.group, CHROM.REGION, strain_set, CHROM) %>%
+  yardstick::sens(Simulated, Detected) %>%
+  dplyr::rename(Power = .estimate) %>%
+  dplyr::select(-c(.metric,.estimator))
+
+power.chrom.region <- power %>%
+  dplyr::filter(!is.na(Power)) %>%
+  dplyr::group_by(pop.size, population.group, CHROM.REGION, CHROM) %>%
+  dplyr::summarise(mean = mean(Power),
+                   sd = sd(Power)) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                ymax = if_else(condition = b > 1, 
+                             true = 1-mean, 
+                             false = sd),
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::select(-a,-b) %>%
+  dplyr::filter(pop.size %in% c(48, 96, 144, 192))
+ggplot(power.chrom.region, mapping = aes(x = CHROM.REGION, 
+                                         y = mean, 
+                                         colour = population.group)) + 
+  theme_bw() +
+  geom_point(position = position_dodge(width=0.5)) + 
+  geom_errorbar(data = power.chrom.region,
+                width = 0.5,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin, colour = population.group),
+                position=position_dodge(width=0.5))  + 
+  # geom_line(mapping = aes(group = population.group), position = position_dodge(width = 0.5)) + 
+  scale_colour_manual(values = pop.group.pal, name = "Population Group") + 
+  facet_grid(CHROM~pop.size) + 
+  theme(legend.position = "top") + 
+  labs(x = "Population Size",
+       y = "Power")
+
+
+
+
+
+
+resolution <- dat.population.features.divergence  %>%
+  dplyr::filter(!is.na(CHROM.REGION)) %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::group_by(pop.size, population.group, CHROM.REGION, strain_set, CHROM) %>%
+  dplyr::summarise(mean.interval.Mb = mean(interval_size/1000000)) 
+
+resolution.chrom.region <- resolution %>% 
+  dplyr::group_by(pop.size, population.group, CHROM.REGION, CHROM) %>%
+  dplyr::summarise(mean = mean(mean.interval.Mb),
+                   sd = sd(mean.interval.Mb)) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::select(-a,-b) %>%
+  dplyr::filter(pop.size %in% c(48, 96, 144, 192))
+
+ggplot(resolution.chrom.region) + 
+  theme_bw() +
+  geom_point(mapping=aes(x=CHROM.REGION, 
+                         y=mean, 
+                         colour = population.group), position = position_dodge(width = 0.5)) + 
+  geom_pointrange(data=resolution.chrom.region, 
+                  mapping=aes(x=CHROM.REGION, 
+                              y=mean, 
+                              ymin=mean-ymin, ymax=mean+sd, colour = population.group), 
+                  position = position_dodge(width = 0.5))  +
+  scale_colour_manual(values = pop.group.pal, name = "Population Group") + 
+  facet_grid(CHROM~pop.size) + 
+  theme(legend.position = "top") + 
+  labs(x = "Population Size",
+       y = "Mean ROI Size (Mb)")
+
+```
