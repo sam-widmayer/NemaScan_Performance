@@ -296,7 +296,7 @@ NemaScan simulation performance was assessed with the following experimental par
 * ###### Number of Replicates per Regime: ```r max(as.numeric(dat.population.features$Rep))```
 * ###### QTL Effect Range: ```r levels(as.factor(dat.population.features$effect_range))```
 
-## Simulated QTL Locations
+## Plots
 
 ```{r echo=FALSE}
 pop.group.pal <- wes_palette(name = "Royal1", n = 2)
@@ -686,11 +686,102 @@ dat.population.features.divergence %>%
   scale_alpha_manual(values = c(0.6,1), name = "Rare Divergence") + 
   ylim(c(0,1)) + 
   labs(x = "Recall", y = "Precision")
+
+
+pr_auc_common.divergent <- dat.population.features.divergence %>%
+  dplyr::filter(pop.size %in% c(48,96,144,192)) %>%
+  dplyr::group_by(common.divergent, population.group, pop.size, strain_set) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::filter(!is.na(.estimate)) %>%
+  dplyr::rename(PR_AUC = .estimate) %>%
+  dplyr::select(-c(.metric, .estimator)) %>%
+  dplyr::group_by(common.divergent, population.group, pop.size) %>%
+  dplyr::summarise(mean = mean(PR_AUC),
+                   sd = sd(PR_AUC)) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                ymax = if_else(condition = b > 1, 
+                             true = 1-mean, 
+                             false = sd),
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::select(-a,-b) %>%
+  dplyr::filter(pop.size %in% c(48, 96, 144, 192))
+
+ggplot(pr_auc_common.divergent, mapping = aes(x = population.group, 
+                                            y = mean, 
+                                            colour = population.group,
+                                            alpha = common.divergent,
+                                            group = common.divergent)) + 
+  theme_bw() +
+  geom_point(position = position_dodge(width=0.2)) + 
+  geom_errorbar(data = pr_auc_common.divergent,
+                width = 0.2,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin, colour = population.group),
+                position=position_dodge(width=0.2))  + 
+  geom_line(position=position_dodge(width=0.2), colour = "black") +
+  scale_colour_manual(values = pop.group.pal, name = "Population Group") + 
+  scale_alpha_manual(values = c(0.4,1), name = "Common Divergence") +  
+  facet_grid(.~pop.size) + 
+  scale_y_continuous(breaks = seq(0,1,0.1), limits = c(0,1)) +
+  theme(legend.position = "right",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  labs(x = "Population Size",
+       y = "Precision-Recall AUC")
+
+
+
+
+
+
+pr_auc_rare.divergent <- dat.population.features.divergence %>%
+  dplyr::filter(pop.size %in% c(48,96,144,192)) %>%
+  dplyr::group_by(rare.divergent, population.group, pop.size, strain_set) %>%
+  yardstick::pr_auc(Simulated, log10p) %>%
+  dplyr::filter(!is.na(.estimate)) %>%
+  dplyr::rename(PR_AUC = .estimate) %>%
+  dplyr::select(-c(.metric, .estimator)) %>%
+  dplyr::group_by(rare.divergent, population.group, pop.size) %>%
+  dplyr::summarise(mean = mean(PR_AUC),
+                   sd = sd(PR_AUC)) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                ymax = if_else(condition = b > 1, 
+                             true = 1-mean, 
+                             false = sd),
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::select(-a,-b) %>%
+  dplyr::filter(pop.size %in% c(48, 96, 144, 192))
+
+ggplot(pr_auc_rare.divergent, mapping = aes(x = population.group, 
+                                            y = mean, 
+                                            colour = population.group,
+                                            alpha = rare.divergent,
+                                            group = rare.divergent)) + 
+  theme_bw() +
+  geom_point(position = position_dodge(width=0.2)) + 
+  geom_errorbar(data = pr_auc_rare.divergent,
+                width = 0.2,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin, colour = population.group),
+                position=position_dodge(width=0.2))  + 
+  geom_line(position=position_dodge(width=0.2), colour = "black") +
+  scale_colour_manual(values = pop.group.pal, name = "Population Group") + 
+  scale_alpha_manual(values = c(0.4,1), name = "Rare Divergence") +  
+  facet_grid(.~pop.size) + 
+  scale_y_continuous(breaks = seq(0,1,0.1), limits = c(0,1)) +
+  theme(legend.position = "right",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  labs(x = "Population Size",
+       y = "Precision-Recall AUC")
+
+
+
   
-```
-
-```{r find.comparable.mappings, echo=FALSE, message=FALSE, warning=FALSE}
-
 ################
 ## STRAIN SET ##
 ################
