@@ -1,7 +1,7 @@
 library(tidyverse)
 require(ids)
-# setwd("~/Documents/projects/NemaScan_Performance/")
-setwd("~/Documents/AndersenLab/NemaScan_Performance/")
+setwd("~/Documents/projects/NemaScan_Performance/")
+# setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 strain.data <- data.table::fread("data/CelegansStrainData.tsv") 
 sweeps <- data.table::fread("data/sweep_summary.tsv")
 hahnel_204 <- data.table::fread("data/hahnel_209.tsv") %>%
