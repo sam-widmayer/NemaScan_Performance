@@ -498,12 +498,13 @@ power.samplesize <- dat.population.features.divergence %>%
   dplyr::select(-a,-b)
 power.plot.sample.size <- ggplot(power.samplesize, mapping = aes(x = as.factor(pop.size), y = mean, group = "identity")) + 
   theme_bw() + 
-  geom_point(position = position_dodge(width = 0.5), shape = 21) +
+  geom_line(position=position_dodge(width=0.5)) +
+  geom_point(position = position_dodge(width = 0.5)) +
   geom_errorbar(data = power.samplesize,
                 width = 0.5,
                 mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin),
                 position=position_dodge(width=0.5)) + 
-  geom_line(position=position_dodge(width=0.5)) +
+
   theme(legend.position = "top", 
         panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   ylim(c(0,1)) + 
@@ -620,17 +621,17 @@ power.popgroup.varexp <- dat.population.features.divergence %>%
 
 
 power.plot.variance.explained <- ggplot(power.popgroup.varexp, mapping = aes(x = reorder(Sim.Var.Exp.Bin, bottom), y = mean, 
-                                                fill = as.factor(pop.size),
+                                                colour = as.factor(pop.size),
                                                 group = as.factor(pop.size))) + 
   theme_bw() + 
-  geom_point(position = position_dodge(width = 0.5), shape = 21) +
+  geom_line(position=position_dodge(width=0.5), mapping = aes(colour = as.factor(pop.size))) +
+  geom_point(position = position_dodge(width = 0.5)) +
   geom_errorbar(data = power.popgroup.varexp,
                 width = 0.5, alpha = 0.2,
                 mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin, colour = as.factor(pop.size)),
                 position=position_dodge(width=0.5)) +
-  geom_line(position=position_dodge(width=0.5), mapping = aes(colour = as.factor(pop.size))) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  scale_fill_brewer(palette = "PuOr", name = "Sample Size") +
+  # scale_fill_brewer(palette = "PuOr", name = "Sample Size") +
   scale_colour_brewer(palette = "PuOr", name = "Sample Size") +
   theme(legend.position = "top", legend.justification = c(1,0),
         panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
