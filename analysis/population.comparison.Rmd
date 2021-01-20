@@ -471,6 +471,46 @@ pop.size <- dat.population.features.divergence %>%
   dplyr::select(strain_set, population.group, pop.size) %>%
   dplyr::filter(!duplicated(.))
 
+pop.size.complete <- dat.population.features.divergence %>%
+  dplyr::filter(population.group == "Complete Subsampling") %>%
+  dplyr::select(strain_set, population.group, pop.size) %>%
+  dplyr::filter(!duplicated(.))
+
+
+power.samplesize <- dat.population.features.divergence %>%
+  dplyr::filter(population.group == "Complete Subsampling") %>%
+  dplyr::group_by(strain_set) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power") %>%
+  dplyr::left_join(., pop.size.complete) %>%
+  dplyr::group_by(pop.size) %>%
+  dplyr::summarise(mean = mean(.estimate),
+                   sd = sd(.estimate),
+                   n = n()) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                ymax = if_else(condition = b > 1, 
+                             true = 1-mean, 
+                             false = sd),
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::select(-a,-b)
+power.plot.sample.size <- ggplot(power.samplesize, mapping = aes(x = as.factor(pop.size), y = mean, group = "identity")) + 
+  theme_bw() + 
+  geom_point(position = position_dodge(width = 0.5), shape = 21) +
+  geom_errorbar(data = power.samplesize,
+                width = 0.5,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin),
+                position=position_dodge(width=0.5)) + 
+  geom_line(position=position_dodge(width=0.5)) +
+  theme(legend.position = "top", 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  ylim(c(0,1)) + 
+  labs(x = "Sample Size",
+       y = "Power")
+power.plot.sample.size
+
 
 power.popgroup.samplesize <- dat.population.features.divergence %>%
   dplyr::group_by(strain_set, population.group) %>%
@@ -508,7 +548,6 @@ ggplot(power.popgroup.samplesize, mapping = aes(x = as.factor(pop.size), y = mea
        y = "Power")
 
 
-
 power.popgroup.samplesize.divergence <- dat.population.features.divergence %>%
   dplyr::group_by(strain_set, population.group, common.divergent) %>%
   yardstick::sens(truth = Simulated, estimate = Detected) %>%
@@ -528,6 +567,7 @@ power.popgroup.samplesize.divergence <- dat.population.features.divergence %>%
                              true = (0-mean)*-1, 
                              false = sd)) %>%
   dplyr::select(-a,-b)
+
 ggplot(power.popgroup.samplesize.divergence, mapping = aes(x = as.factor(pop.size), y = mean, 
                                                 fill = population.group,
                                                 group = interaction(population.group, common.divergent))) + 
@@ -546,6 +586,76 @@ ggplot(power.popgroup.samplesize.divergence, mapping = aes(x = as.factor(pop.siz
        y = "Power")
 
 
+power.popgroup.varexp <- dat.population.features.divergence %>%
+  dplyr::filter(population.group == "Complete Subsampling", Simulated == TRUE) %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = cut(Simulated.QTL.VarExp, breaks = unique(c(seq(0,0.2,by = 0.025), 
+                                                                              seq(0.2,0.6,by = 0.1))))) %>%
+  dplyr::group_by(Sim.Var.Exp.Bin, strain_set) %>%
+  yardstick::sens(truth = Simulated, estimate = Detected) %>%
+  dplyr::mutate(.metric = "Power") %>%
+  dplyr::filter(!is.na(.estimate), 
+                !is.na(Sim.Var.Exp.Bin)) %>%
+  dplyr::left_join(., pop.size.complete) %>%
+  droplevels() %>%
+  dplyr::group_by(pop.size, Sim.Var.Exp.Bin) %>%
+  dplyr::summarise(mean = mean(.estimate),
+                   sd = sd(.estimate),
+                   n = n()) %>%
+  dplyr::mutate(b = mean + sd,
+                a = mean - sd,
+                ymax = if_else(condition = b > 1, 
+                             true = 1-mean, 
+                             false = sd),
+                ymin = if_else(condition = a < 0, 
+                             true = (0-mean)*-1, 
+                             false = sd)) %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = gsub(as.character(Sim.Var.Exp.Bin), pattern = "\\(", replacement = "") %>%
+                  gsub(., pattern = "\\]", replacement = "") %>%
+                  gsub(., pattern = ",", replacement = "-")) %>%
+  dplyr::select(-a,-b) %>%
+  tidyr::separate(col = Sim.Var.Exp.Bin, into = c("top","bottom"), sep = "-", remove = FALSE) %>%
+  dplyr::mutate(top = as.numeric(top)*100,
+                bottom = as.numeric(bottom)*100) %>%
+  tidyr::unite("Sim.Var.Exp.Bin", top:bottom, sep = "-", remove = FALSE)
+
+
+power.plot.variance.explained <- ggplot(power.popgroup.varexp, mapping = aes(x = reorder(Sim.Var.Exp.Bin, bottom), y = mean, 
+                                                fill = as.factor(pop.size),
+                                                group = as.factor(pop.size))) + 
+  theme_bw() + 
+  geom_point(position = position_dodge(width = 0.5), shape = 21) +
+  geom_errorbar(data = power.popgroup.varexp,
+                width = 0.5, alpha = 0.2,
+                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin, colour = as.factor(pop.size)),
+                position=position_dodge(width=0.5)) +
+  geom_line(position=position_dodge(width=0.5), mapping = aes(colour = as.factor(pop.size))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  scale_fill_brewer(palette = "PuOr", name = "Sample Size") +
+  scale_colour_brewer(palette = "PuOr", name = "Sample Size") +
+  theme(legend.position = "top", legend.justification = c(1,0),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(x = "Variance Explained by Simulated QTL (%)",
+       y = "Power")
+power.plot.variance.explained
+
+
+plots <- cowplot::plot_grid(power.plot.sample.size + theme(legend.position = "none"),
+                            power.plot.variance.explained + theme(legend.position = "none"),
+                            nrow = 1,
+                            labels = "AUTO", align = "hv", axis = "b")
+
+sample.size.legend <- cowplot::get_legend(power.plot.variance.explained)
+legends <- cowplot::plot_grid(sample.size.legend, ncol = 1, axis = "r")
+prelim.fig.3 <- cowplot::plot_grid(plots, 
+                                   legends, 
+                                   ncol = 1, 
+                                   rel_heights = c(6,1))
+ggsave(plot = prelim.fig.3, filename = "output/prelim.fig.3.png", height = 4, width = 7.5)
+
+
+power.popgroup.varexp %>%
+  dplyr::select(Sim.Var.Exp.Bin, pop.size, n) %>%
+  tidyr::pivot_wider(names_from = pop.size, values_from = n)
 
 
 power.popgroup.quintileI <- dat.population.features.divergence %>%
