@@ -1,12 +1,45 @@
 library(tidyverse)
 require(ids)
-setwd("~/Documents/projects/NemaScan_Performance/")
-# setwd("~/Documents/AndersenLab/NemaScan_Performance/")
+# setwd("~/Documents/projects/NemaScan_Performance/")
+setwd("~/Documents/AndersenLab/NemaScan_Performance/")
 strain.data <- data.table::fread("data/CelegansStrainData.tsv") 
 sweeps <- data.table::fread("data/sweep_summary.tsv")
 hahnel_204 <- data.table::fread("data/hahnel_209.tsv") %>%
   dplyr::select(strain)
 today <- format(Sys.time(), '%Y%m%d')
+
+sweptness.nested <- sweeps %>%
+  dplyr::select(isotype, contains("hapshare")) %>%
+  tidyr::pivot_longer(cols = -isotype, names_to = "chrom", values_to = "pct.swept") %>%
+  dplyr::mutate(chrom = gsub(chrom,pattern = "_hapshare", replacement = "")) %>%
+  dplyr::group_by(chrom) %>%
+  tidyr::nest()
+
+
+chrom.swept.bin <- function(data, chrom){
+  lowest <- data %>%
+    dplyr::filter(pct.swept < 0.10) %>%
+    dplyr::mutate(swept.bin = "0-0.10") 
+  
+  data %>%
+    dplyr::filter(pct.swept > 0.10) %>%
+    mutate(swept.bin = cut(pct.swept, c(0.1, 0.5, 1), include.lowest = F)) %>%
+    dplyr::mutate(swept.bin = gsub(swept.bin, pattern = "\\(", replacement = "") %>%
+                    gsub(., pattern = "\\]", replacement = "") %>%
+                    gsub(., pattern = ",", replacement = "-")) %>%
+    dplyr::full_join(., lowest) %>%
+    dplyr::mutate(chrom = chrom, 
+                  swept.bin = as.factor(swept.bin))
+}
+swept.coarse.bins <- purrr::map2(sweptness.nested$data, sweptness.nested$chrom, chrom.swept.bin) %>%
+  Reduce(rbind, .) %>%
+  dplyr::filter(!chrom %in% c("II", "III")) %>%
+  dplyr::group_by(isotype, swept.bin) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(names_from = swept.bin, values_from = `n()`)
+
+  
+
 # Joining Strain Info
 metadata <- sweeps %>%
   dplyr::full_join(., strain.data) %>%
