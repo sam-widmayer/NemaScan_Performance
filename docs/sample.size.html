@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Population Differences in Mapping Performance</title>
+
+<script src="site_libs/header-attrs-2.5/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">NemaScan: GWAS in C. elegans Wild Isolates</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/sam-widmayer/NemaScan_Performance">
+    <span class="fa fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Population Differences in Mapping Performance</h1>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2021-02-10
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>NemaScan_Performance/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.6.2). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20200825code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20200825)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20200825code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20200825)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongabsolute"> <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> <strong>File paths:</strong> absolute </a>
+</p>
+</div>
+<div id="strongFilepathsstrongabsolute" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Using absolute paths to the files within your workflowr project makes it difficult for you and others to run your code on a different machine. Change the absolute path(s) below to the suggested relative path(s) to make your code more reproducible.
+</p>
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th style="text-align:left;">
+absolute
+</th>
+<th style="text-align:left;">
+relative
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+~/Documents/projects/NemaScan_Performance/
+</td>
+<td style="text-align:left;">
+.
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreef14d9a388549211642a82d59a7a3ff2a77290f3dtargetblankf14d9a3a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/f14d9a388549211642a82d59a7a3ff2a77290f3d" target="_blank">f14d9a3</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomsamwidmayerNemaScanPerformancetreef14d9a388549211642a82d59a7a3ff2a77290f3dtargetblankf14d9a3a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/sam-widmayer/NemaScan_Performance/tree/f14d9a388549211642a82d59a7a3ff2a77290f3d" target="_blank">f14d9a3</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .DS_Store
+    Ignored:    .Rhistory
+    Ignored:    analysis/.DS_Store
+    Ignored:    code/.DS_Store
+    Ignored:    data/.DS_Store
+    Ignored:    data/.Rhistory
+    Ignored:    output/.DS_Store
+
+Untracked files:
+    Untracked:  analysis/genomic.landscape.Rmd
+    Untracked:  code/2014_toxinphenotypes.R
+    Untracked:  code/Aggregate_Mappings.R
+    Untracked:  code/Find_Aggregate_Intervals.R
+    Untracked:  code/Find_GCTA_Intervals.R
+    Untracked:  code/pipeline.plotting.R
+    Untracked:  code/startup.R
+    Untracked:  code/susie.R
+    Untracked:  data/Chr.1.ARM.divergent.regions.bed
+    Untracked:  data/Chr.1.ARM.nondivergent.regions.bed
+    Untracked:  data/Chr.1.CENTER.divergent.regions.bed
+    Untracked:  data/Chr.1.CENTER.nondivergent.regions.bed
+    Untracked:  data/Chr.2.ARM.divergent.regions.bed
+    Untracked:  data/Chr.2.ARM.nondivergent.regions.bed
+    Untracked:  data/Chr.2.CENTER.divergent.regions.bed
+    Untracked:  data/Chr.2.CENTER.nondivergent.regions.bed
+    Untracked:  data/Chr.3.ARM.divergent.regions.bed
+    Untracked:  data/Chr.3.ARM.nondivergent.regions.bed
+    Untracked:  data/Chr.3.CENTER.divergent.regions.bed
+    Untracked:  data/Chr.3.CENTER.nondivergent.regions.bed
+    Untracked:  data/Chr.4.ARM.divergent.regions.bed
+    Untracked:  data/Chr.4.ARM.nondivergent.regions.bed
+    Untracked:  data/Chr.4.CENTER.divergent.regions.bed
+    Untracked:  data/Chr.4.CENTER.nondivergent.regions.bed
+    Untracked:  data/Chr.5.ARM.divergent.regions.bed
+    Untracked:  data/Chr.5.ARM.nondivergent.regions.bed
+    Untracked:  data/Chr.5.CENTER.divergent.regions.bed
+    Untracked:  data/Chr.5.CENTER.nondivergent.regions.bed
+    Untracked:  data/Chr.6.ARM.divergent.regions.bed
+    Untracked:  data/Chr.6.ARM.nondivergent.regions.bed
+    Untracked:  data/Chr.6.CENTER.divergent.regions.bed
+    Untracked:  data/Chr.6.CENTER.nondivergent.regions.bed
+    Untracked:  data/NemaScan_Performance.Algorithm.Sims.20201024.RData
+    Untracked:  data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData
+    Untracked:  data/NemaScan_Performance.Algorithm.Sims.v.2.20201104.RData
+    Untracked:  data/NemaScan_Performance.Architecture.20201120.RData
+    Untracked:  data/NemaScan_Performance.Architecture.CI50.20201130.RData
+    Untracked:  data/NemaScan_Performance.Architecture.CI50.group500.20201201.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.20201205.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.20201209.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.20201223.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.CI.50.20201224.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.CI50.group500.v2.20210131.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.CI50.v2.20210131.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.group500.20201223.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.group500.CI.50.20201224.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.group500.v2.20210131.RData
+    Untracked:  data/NemaScan_Performance.Architecture.Mixed.v2.20210131.RData
+    Untracked:  data/NemaScan_Performance.Architecture.group500.20201124.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_GAMMA_EMMA_hardfiltered.20201020.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.20200909.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_GAMMA_EMMA.20200924.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_PowerPrecision_REDO.20200909.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_cendr_sets.20200929.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20201018.RData
+    Untracked:  data/NemaScan_Performance.CeNDR2020_population_subsampling.20201019.RData
+    Untracked:  data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.20201230.RData
+    Untracked:  data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.v2.20210208.RData
+    Untracked:  data/NemaScan_Performance.Demography.SampleSize.Unswept.Subsampled.20210111.RData
+    Untracked:  data/NemaScan_Performance.Genomic.Locations.Chr.1.ARM.divergent.20210126.RData
+    Untracked:  data/NemaScan_Performance.Genomic.Locations.Chr.1.ARM.divergent.20210130.RData
+    Untracked:  data/NemaScan_Performance.Genomic.Locations.Chr.1.ARM.nondivergent.20210129.RData
+    Untracked:  data/NemaScan_Performance.Genomic.Locations.Chr.1.CENTER.divergent.20210129.RData
+    Untracked:  data/NemaScan_Performance.Genomic.Locations.Chr.1.CENTER.nondivergent.20210129.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.HF.chr125.20201112.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Hard.Filtered.20201111.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.20201111.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.NonDivergent.20201112.RData
+    Untracked:  data/NemaScan_Performance.Variant.Set.Imputed.chr125.20201112.RData
+    Untracked:  data/NemaScan_Performance.updated.MIPstrain.performance.20210119.RData
+    Untracked:  data/NemaScan_Population_Metrics.Demography.SampleSize.Complete.Subsampled.20210111.RData
+    Untracked:  data/NemaScan_Population_Metrics.Demography.SampleSize.Complete.Subsampled.v2.20210208.RData
+    Untracked:  data/NemaScan_Population_Metrics.Demography.SampleSize.Unswept.Subsampled.20210111.RData
+    Untracked:  data/NemaScan_Strain_Summary.Demography.SampleSize.Complete.Subsampled.20210111.RData
+    Untracked:  data/NemaScan_Strain_Summary.Demography.SampleSize.Complete.Subsampled.v2.20210208.RData
+    Untracked:  data/NemaScan_Strain_Summary.Demography.SampleSize.Unswept.Subsampled.20210111.RData
+    Untracked:  data/TO_SIMS.bim
+    Untracked:  data/all_susie_BF_hits.tsv
+    Untracked:  data/all_susie_hits.tsv
+    Untracked:  data/causal.variants.sim.100.txt
+    Untracked:  data/causal.variants.sim.5.txt
+    Untracked:  data/hard.filtered.snps.bim
+    Untracked:  data/imputed.snps.bim
+    Untracked:  output/10_1_0.6_0.05_gamma_fiscal.burro.manhattan.plot.png
+    Untracked:  output/10_2_0.6_0.05_gamma_sublinear.cowrie.manhattan.plot.png
+    Untracked:  output/2014_toxin_phenos.tsv
+    Untracked:  output/5_1_0.8_CHRIII_5.12MB_effect.plot.png
+    Untracked:  output/5_1_0.8_CHRII_4.44MB_effect.plot.png
+    Untracked:  output/5_1_0.8_CHRV_5.44MB_effect.plot.png
+    Untracked:  output/5_1_0.8_CHRX_1.83MB_effect.plot.png
+    Untracked:  output/5_1_0.8_LD.plot.png
+    Untracked:  output/5_1_0.8_manhattan.plot.png
+    Untracked:  output/5_92_0.2_LD.plot.png
+    Untracked:  output/complete.subsampled.strains.txt
+    Untracked:  output/n.divergent.variants.in.variant.set.png
+    Untracked:  output/perc.divergent.variants.in.variant.set.png
+    Untracked:  output/pr.curve.variant.set.png
+    Untracked:  output/prelim.fig.1.png
+    Untracked:  output/prelim.fig.2.png
+    Untracked:  output/prelim.fig.3.png
+    Untracked:  output/prelim.supp.fig.A.png
+    Untracked:  output/prelim.supp.fig.B.png
+    Untracked:  output/subsampled.strains_20201225_n144_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n192_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n240_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n288_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n336_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n384_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n48_reps200.txt
+    Untracked:  output/subsampled.strains_20201225_n96_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n120_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n144_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n168_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n24_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n48_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n72_reps200.txt
+    Untracked:  output/subsampled.swept.strains_20201225_n96_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n120_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n144_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n168_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n192_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n216_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n24_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n48_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n72_reps200.txt
+    Untracked:  output/subsampled.unswept.strains_20201225_n96_reps200.txt
+    Untracked:  output/susie.validation.csv
+    Untracked:  output/unswept.subsampled.strains.txt
+    Untracked:  output/var.exp.per.peak.png
+
+Unstaged changes:
+    Modified:   analysis/architecture.Rmd
+    Modified:   analysis/population.comparison.Rmd
+    Modified:   code/commonly.used.sim.locations.R
+    Modified:   code/generate_strain_lists_swept.R
+    Modified:   output/swept.by.chr.strain.lists.txt
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were made to the R Markdown (<code>analysis/sample.size.Rmd</code>) and HTML (<code>docs/sample.size.html</code>) files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view the files as they were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/sam-widmayer/NemaScan_Performance/blob/f14d9a388549211642a82d59a7a3ff2a77290f3d/analysis/sample.size.Rmd" target="_blank">f14d9a3</a>
+</td>
+<td>
+Sam Widmayer
+</td>
+<td>
+2021-02-10
+</td>
+<td>
+sample size plot revisions with new var.exp calcus
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="analysis-date-february-10-2021" class="section level2">
+<h2>Analysis date: February 10, 2021</h2>
+</div>
+<div id="simulation-parameters" class="section level2">
+<h2>Simulation Parameters</h2>
+<p>NemaScan simulation performance was assessed with the following experimental parameters:</p>
+<ul>
+<li><h6 id="number-of-simulated-qtl-10">Number of Simulated QTL: <code>10</code></h6></li>
+<li><h6 id="sample-populations-999">Sample Population(s): <code>999</code></h6></li>
+<li><h6 id="number-of-replicates-per-regime-3">Number of Replicates per Regime: <code>3</code></h6></li>
+<li><h6 id="qtl-effect-range-gamma">QTL Effect Range: <code>gamma</code></h6></li>
+</ul>
+</div>
+<div id="plots" class="section level2">
+<h2>Plots</h2>
+<p><img src="figure/sample.size.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/sample.size.Rmd/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 1 x 5
+   `48`  `96` `192` `288` `384`
+  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;
+1   200   200   200   199   200</code></pre>
+<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 7 x 2
+  quintile_I    `n()`
+  &lt;fct&gt;         &lt;int&gt;
+1 (0.5,0.545]       8
+2 (0.545,0.589]    21
+3 (0.589,0.634]    88
+4 (0.634,0.679]   612
+5 (0.679,0.723]   207
+6 (0.723,0.768]    49
+7 (0.768,0.813]    14</code></pre>
+<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 7 x 2
+  quintile_IV   `n()`
+  &lt;fct&gt;         &lt;int&gt;
+1 (0.395,0.446]     8
+2 (0.446,0.497]    12
+3 (0.497,0.548]    70
+4 (0.548,0.598]   567
+5 (0.598,0.649]   289
+6 (0.649,0.699]    40
+7 (0.699,0.75]     13</code></pre>
+<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 7 x 2
+  quintile_V    `n()`
+  &lt;fct&gt;         &lt;int&gt;
+1 (0.604,0.646]     4
+2 (0.646,0.688]    21
+3 (0.688,0.729]    67
+4 (0.729,0.771]   458
+5 (0.771,0.812]   390
+6 (0.812,0.854]    53
+7 (0.854,0.896]     6</code></pre>
+<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 7 x 2
+  quintile_X    `n()`
+  &lt;fct&gt;         &lt;int&gt;
+1 (0.437,0.488]     7
+2 (0.488,0.539]    14
+3 (0.539,0.589]   113
+4 (0.589,0.64]    637
+5 (0.64,0.69]     193
+6 (0.69,0.741]     28
+7 (0.741,0.792]     7</code></pre>
+<p><img src="figure/sample.size.Rmd/unnamed-chunk-2-3.png" width="672" style="display: block; margin: auto;" /><img src="figure/sample.size.Rmd/unnamed-chunk-2-4.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="performance" class="section level2">
+<h2>Performance</h2>
+<pre><code>Joining, by = &quot;strain_set&quot;</code></pre>
+<pre><code>`summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code># A tibble: 5 x 3
+  pop.size  mean     sd
+     &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;
+1       48 0.120 0.124 
+2       96 0.126 0.101 
+3      192 0.194 0.0808
+4      288 0.261 0.0838
+5      384 0.306 0.0905</code></pre>
+<pre><code>Joining, by = &quot;strain_set&quot;</code></pre>
+<pre><code>`summarise()` regrouping output by &#39;pop.size&#39; (override with `.groups` argument)</code></pre>
+<p><img src="figure/sample.size.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/sample.size.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/sample.size.Rmd/unnamed-chunk-3-3.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.6.3 (2020-02-29)
+Platform: x86_64-apple-darwin15.6.0 (64-bit)
+Running under: macOS Mojave 10.14.6
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+ [1] grid      parallel  stats4    stats     graphics  grDevices utils    
+ [8] datasets  methods   base     
+
+other attached packages:
+ [1] gridExtra_2.3            wesanderson_0.3.6.9000   ggbeeswarm_0.6.0        
+ [4] cowplot_1.1.0            GenomicRanges_1.38.0     GenomeInfoDb_1.22.1     
+ [7] IRanges_2.20.2           S4Vectors_0.24.4         BiocGenerics_0.32.0     
+[10] RColorBrewer_1.1-2       nationalparkcolors_0.1.0 yardstick_0.0.7         
+[13] workflows_0.2.1          tune_0.1.1               rsample_0.0.8           
+[16] recipes_0.1.13           parsnip_0.1.3            modeldata_0.0.2         
+[19] infer_0.5.3              dials_0.0.9              scales_1.1.1            
+[22] broom_0.7.2              tidymodels_0.1.1         forcats_0.5.0           
+[25] stringr_1.4.0            dplyr_1.0.2              purrr_0.3.4             
+[28] readr_1.4.0              tidyr_1.1.2              tibble_3.0.4            
+[31] ggplot2_3.3.2            tidyverse_1.3.0          workflowr_1.6.2         
+
+loaded via a namespace (and not attached):
+ [1] colorspace_1.4-1       ellipsis_0.3.1         class_7.3-17          
+ [4] rprojroot_1.3-2        XVector_0.26.0         fs_1.5.0              
+ [7] rstudioapi_0.11        farver_2.0.3           listenv_0.8.0         
+[10] furrr_0.1.0            prodlim_2019.11.13     fansi_0.4.1           
+[13] lubridate_1.7.9        xml2_1.3.2             codetools_0.2-16      
+[16] splines_3.6.3          knitr_1.30             jsonlite_1.7.1        
+[19] pROC_1.16.2            dbplyr_1.4.4           compiler_3.6.3        
+[22] httr_1.4.2             backports_1.1.10       assertthat_0.2.1      
+[25] Matrix_1.2-18          cli_2.1.0              later_1.1.0.1         
+[28] htmltools_0.5.0        tools_3.6.3            GenomeInfoDbData_1.2.2
+[31] gtable_0.3.0           glue_1.4.2             Rcpp_1.0.6            
+[34] cellranger_1.1.0       DiceDesign_1.8-1       vctrs_0.3.4           
+[37] nlme_3.1-149           iterators_1.0.12       timeDate_3043.102     
+[40] gower_0.2.2            xfun_0.18              globals_0.13.1        
+[43] rvest_0.3.6            lifecycle_0.2.0        future_1.19.1         
+[46] zlibbioc_1.32.0        MASS_7.3-53            ipred_0.9-9           
+[49] hms_0.5.3              promises_1.1.1         yaml_2.2.1            
+[52] rpart_4.1-15           stringi_1.5.3          highr_0.8             
+[55] foreach_1.5.0          lhs_1.1.1              lava_1.6.8            
+[58] bitops_1.0-6           rlang_0.4.10           pkgconfig_2.0.3       
+[61] evaluate_0.14          lattice_0.20-41        labeling_0.4.2        
+[64] tidyselect_1.1.0       plyr_1.8.6             magrittr_2.0.1        
+[67] R6_2.4.1               generics_0.0.2         DBI_1.1.0             
+[70] mgcv_1.8-33            pillar_1.4.6           haven_2.3.1           
+[73] whisker_0.4            withr_2.3.0            RCurl_1.98-1.2        
+[76] survival_3.2-7         nnet_7.3-14            modelr_0.1.8          
+[79] crayon_1.3.4           utf8_1.1.4             rmarkdown_2.5         
+[82] readxl_1.3.1           data.table_1.13.2      blob_1.2.1            
+[85] git2r_0.27.1           reprex_0.3.0           digest_0.6.27         
+[88] httpuv_1.5.4           munsell_0.5.0          GPfit_1.0-8           
+[91] beeswarm_0.2.3         vipor_0.4.5           </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3,h4",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
