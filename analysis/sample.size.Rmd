@@ -1,5 +1,5 @@
 ---
-title: "Population Differences in Mapping Performance"
+title: "Quantifying the Beavis Effect of GWA in *C. elegans*"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
