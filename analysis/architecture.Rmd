@@ -60,7 +60,46 @@ dat.group1000.150.aggregate$group.size <- as.factor(1000)
 dat.group1000.150.aggregate$CI <- as.factor(150)
 dat.group1000.150.aggregate$eval.method <- "Joint"
 dat.group1000.150.aggregate$aboveBF <- factor(dat.group1000.150.aggregate$aboveBF, levels = c("TRUE","FALSE"))
+dat.group1000.150.aggregate$vcf <- "20200815"
 #####
+
+# Dual Algorithm Aggregated Mapping Results: Default settings: Group = 1000 bp, CI = +150 markers
+load(file = "data/NemaScan_Performance.Architecture.Mixed.WI.20210121.20210318.RData")
+dat.group1000.150.aggregate.WI <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+dat.group1000.150.aggregate.WI$nQTL <- factor(dat.group1000.150.aggregate.WI$nQTL, levels = c("1","5","10","25"))
+dat.group1000.150.aggregate.WI$group.size <- as.factor(1000)
+dat.group1000.150.aggregate.WI$CI <- as.factor(150)
+dat.group1000.150.aggregate.WI$eval.method <- "Joint"
+dat.group1000.150.aggregate.WI$aboveBF <- factor(dat.group1000.150.aggregate.WI$aboveBF, levels = c("TRUE","FALSE"))
+dat.group1000.150.aggregate.WI$vcf <- "20210121"
+
 
 # Group = 500 bp, CI = +150 markers
 load(file = "data/NemaScan_Performance.Architecture.Mixed.group500.v2.20210312.RData") #
@@ -182,6 +221,10 @@ dat <- dat.group1000.150.aggregate %>%
   dplyr::full_join(., dat.group500.50.aggregate)
 dat$group.size <- factor(dat$group.size, levels = c(500,1000))
 dat$CI <- factor(dat$CI, levels = c(50,150))
+
+# Combining default setting simulations performed with different hard filtered vcfs
+default.dat <- dat.group1000.150.aggregate %>%
+  dplyr::full_join(., dat.group1000.150.aggregate.WI)
 ```
 
 ### NemaScan simulation performance was assessed with the following experimental parameters:
@@ -196,7 +239,7 @@ dat$CI <- factor(dat$CI, levels = c(50,150))
 h2.pal <- wes_palette("Darjeeling1", 4)[c(1,4,3,2)]
 nQTL.pal <- wes_palette("Darjeeling2", 4)[c(3,1,4,2)]
 options(dplyr.summarise.inform = FALSE)
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL),
                 algorithm == "MIXED") %>%
@@ -209,7 +252,7 @@ dat.group1000.150.aggregate %>%
        y = "Causal QTL Effect",
        title = "Where were QTL Simulated?")
 
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL),
                 algorithm == "MIXED") %>%
@@ -223,7 +266,7 @@ dat.group1000.150.aggregate %>%
   labs(x = "Minor Allele Frequency",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE,
                 algorithm == "MIXED") %>%
   ggplot(., mapping = aes(x = Simulated.QTL.VarExp, fill = nQTL)) +
@@ -235,7 +278,7 @@ dat.group1000.150.aggregate %>%
   labs(x = "Variance Explained by Simulated Variants (%)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE, Detected == TRUE,
                 algorithm == "MIXED") %>%
   ggplot(., mapping = aes(x = interval.var.exp, fill = nQTL)) +
@@ -247,7 +290,7 @@ dat.group1000.150.aggregate %>%
   labs(x = "Realized Variance Explained by QTL Regions Containing Simulated Variants (%)",
        y = "Frequency of Simulated QTL (Smoothed Density)")
 
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE, Detected == TRUE,
                 algorithm == "MIXED") %>%
   ggplot(., mapping = aes(x = Simulated.QTL.VarExp, y = interval.var.exp)) + 
@@ -260,7 +303,7 @@ dat.group1000.150.aggregate %>%
   labs(x = "Variance Explained by Simulated QTL (%)",
        y = "Realized Variance Explained by QTL Region (%)")
 
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE, Detected == TRUE,
                 algorithm == "MIXED") %>%
   ggplot(., mapping = aes(x = Simulated.QTL.VarExp, y = interval.var.exp, colour = aboveBF)) + 
@@ -274,7 +317,7 @@ dat.group1000.150.aggregate %>%
   labs(x = "Variance Explained by Simulated QTL (%)",
        y = "Realized Variance Explained by QTL Region (%)")
 
-dat.group1000.150.aggregate %>%
+dat.group1000.150.aggregate.WI %>%
   dplyr::filter(Simulated == TRUE, Detected == TRUE, aboveBF == TRUE,
                 algorithm == "MIXED") %>%
   ggplot(., mapping = aes(x = Simulated.QTL.VarExp, y = interval.var.exp, colour = top.hit)) + 
@@ -291,7 +334,7 @@ dat.group1000.150.aggregate %>%
 ```
 
 ```{r default settings PR curve, echo=FALSE, fig.height=6, fig.width=9, warning=FALSE}
-pr.curve <- dat.group1000.150.aggregate %>%
+pr.curve <- dat.group1000.150.aggregate.WI %>%
   dplyr::group_by(h2, nQTL, algorithm) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
   dplyr::filter(!is.infinite(.threshold))
@@ -309,7 +352,7 @@ ggplot(pr.curve, mapping = aes(x = recall, y = precision, colour = nQTL)) +
 ```
 
 ```{r plots, echo=FALSE, warning=FALSE}
-designations <- dat.group1000.150.aggregate %>%
+designations <- default.dat %>%
   dplyr::filter(algorithm == "MIXED") %>%
   droplevels() %>%
   dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
@@ -320,18 +363,18 @@ designations <- dat.group1000.150.aggregate %>%
                   into = c("peak.CHROM","peak.POS"), 
                   sep = ":", remove = F) %>%
   dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
-  dplyr::group_by(h2, algorithm, nQTL, designation, Rep) %>%
+  dplyr::group_by(h2, algorithm, nQTL, designation, Rep, vcf) %>%
   dplyr::summarise(n = n()) %>%
   tidyr::pivot_wider(names_from = designation, values_from = n)
 designations[is.na(designations)] <- 0
-designations$Detected <- rowSums(designations[,5:8])
+designations$Detected <- rowSums(designations[,6:9])
 
 split.Power <- designations %>%
   dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
                 Power = Detected.CV/Simulated,
                 Artefact.Rate = False.Discovery/Detected,
                 Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
-  dplyr::group_by(algorithm, h2, nQTL) %>%
+  dplyr::group_by(algorithm, h2, nQTL, vcf) %>%
   dplyr::summarise(mean.Power = mean(Power),
                    sd.Power = sd(Power)) %>%
   dplyr::mutate(b = mean.Power + sd.Power,
@@ -355,6 +398,7 @@ power.plot <- ggplot(split.Power, mapping = aes(x = nQTL, y = mean.Power, colour
                 width = 0.2,
                 position=position_dodge(width=0.2)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~vcf) + 
   ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
@@ -363,13 +407,12 @@ power.plot <- ggplot(split.Power, mapping = aes(x = nQTL, y = mean.Power, colour
   labs(x = "Number of Supporting QTL",
        y = "Power")
 
-
 split.Artefact <- designations %>%
   dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
                 Power = Detected.CV/Simulated,
                 Artefact.Rate = False.Discovery/Detected,
                 Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
-  dplyr::group_by(algorithm, h2, nQTL) %>%
+  dplyr::group_by(algorithm, h2, nQTL, vcf) %>%
   dplyr::summarise(mean.Artefact = mean(Artefact.Rate),
                    sd.Artefact.Rate = sd(Artefact.Rate)) %>%
   dplyr::mutate(b = mean.Artefact + sd.Artefact.Rate,
@@ -394,6 +437,7 @@ AR.plot <- ggplot(split.Artefact, mapping = aes(x = nQTL, y = mean.Artefact , co
                 width = 0.2,
                 position=position_dodge(width=0.2)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
+  facet_grid(.~vcf) + 
   ylim(c(0,1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
@@ -407,7 +451,7 @@ split.NS.CV <- designations %>%
                 Power = Detected.CV/Simulated,
                 Artefact.Rate = False.Discovery/Detected,
                 Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
-  dplyr::group_by(algorithm, h2, nQTL) %>%
+  dplyr::group_by(algorithm, h2, nQTL, vcf) %>%
   dplyr::summarise(mean.NS.CV = mean(Detected.CV.NS.Rate),
                    sd.NS.CV = sd(Detected.CV.NS.Rate)) %>%
   dplyr::mutate(b = mean.NS.CV + sd.NS.CV,
@@ -433,6 +477,7 @@ NS.CV.plot <- ggplot(split.NS.CV, mapping = aes(x = nQTL, y = mean.NS.CV , colou
                 position=position_dodge(width=0.2)) +
   scale_colour_manual(values = h2.pal, name = expression(italic(h^2))) +
   ylim(c(0,1)) + 
+  facet_grid(.~vcf) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top",
         panel.grid.major = element_blank(),
