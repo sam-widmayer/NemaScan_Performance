@@ -22,7 +22,8 @@ require(data.table)
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/") # Lab Computer
 # setwd("~/Documents/AndersenLab/NemaScan_Performance/") # Laptop
-load(file = "data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData") # EMMA, Algorithm Sims 
+# load(file = "data/NemaScan_Performance.Algorithm.Sims.20201110_EMMA.RData") # EMMA, Algorithm Sims 
+load(file = "data/NemaScan_Performance.Algorithm.Sims.20210510.RData") # EMMA, Algorithm Sims
 dat <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -31,25 +32,29 @@ dat <- simulation.metrics.df %>%
                   into = c("CHROM","POS"), 
                   sep = ":", remove = F) %>%
   dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
                 POS = as.numeric(POS),
                 startPOS = as.numeric(startPOS),
                 peakPOS = as.numeric(peakPOS),
                 endPOS = as.numeric(endPOS),
-                var.exp  = as.numeric(var.exp), # watch
-                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
                 peak_id = as.numeric(peak_id),
                 BETA = as.numeric(BETA),
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, 
+                                        true = interval.log10p, 
+                                        false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size)
-                #, algorithm = if_else(condition = algorithm == "EMMA",
-                #                     true = "EMMAx",
-                #                     false = algorithm)
-                ) %>%
-  dplyr::filter(!algorithm %in% c("No Successful Mappings",
-                                  "LMM-EXACT-LOCO-INBRED"),
-                CHROM != 7)
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7, 
+                algorithm != "LMM-EXACT-INBRED-LOCO")
 ```
 
 ### NemaScan simulation performance was assessed with the following experimental parameters:
@@ -99,7 +104,7 @@ dat %>%
        y = "Frequency of Simulated QTL (Smoothed Density)")
 ```
 
-```{r PR curve, echo=FALSE, fig.height=6, fig.width=9}
+```{r PR curve, eval=FALSE, fig.height=6, fig.width=9, include=FALSE}
 pr.curve <- dat %>%
   dplyr::group_by(h2, algorithm, nQTL) %>%
   yardstick::pr_curve(Simulated, log10p) %>%
@@ -128,150 +133,93 @@ algorithm.palette <- c("#E3B505", # EMMAx
                        "#5B2E48", # LMM EXACT INBRED
                        "#87E5FD") # LMM EXACT LOCO
 
-power <- dat %>%
-  dplyr::group_by(h2, algorithm, nQTL) %>%
-  yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power")
-precision <- dat %>%
-  dplyr::group_by(h2, algorithm, nQTL) %>%
-  yardstick::precision(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Precision")
-pr_auc <- dat %>%
-  dplyr::group_by(h2, algorithm, nQTL) %>%
-  yardstick::pr_auc(Simulated, log10p) %>%
-  dplyr::mutate(.metric = "Precision-Recall_AUC")
-resolution <- dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL) %>%
-  dplyr::group_by(h2, algorithm, nQTL) %>%
-  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size), 
-                   mean(Simulated.QTL.VarExp), median(Simulated.QTL.VarExp), sd(Simulated.QTL.VarExp))
-summarized <- power %>%
-  dplyr::full_join(., precision) %>%
-  dplyr::full_join(., pr_auc) %>%
-  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
-  dplyr::mutate(F1score = 2*((Precision*Power)/(Precision+Power)),
-                FPR = 1-Precision) %>%
-  dplyr::left_join(.,resolution) %>%
-  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
-                median.interval.Mb = `median(interval_size)`/1000000,
-                sd.interval.Mb = `sd(interval_size)`/1000000, 
-                mean.PVE = `mean(Simulated.QTL.VarExp)`*100,
-                median.PVE = `median(Simulated.QTL.VarExp)`*100,
-                sd.PVE = `sd(Simulated.QTL.VarExp)`*100, 
-                nQTL = as.factor(nQTL),
-                .keep = "unused")
-levels(summarized$nQTL) <- c("1 Simulated QTL", "5 Simulated QTL")
+designations <- dat %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
+  dplyr::group_by(designation, algorithm, nQTL, h2, Rep) %>%
+  dplyr::summarise(n = n()) %>%
+  tidyr::pivot_wider(names_from = designation, values_from = n)
+designations[is.na(designations)] <- 0
+designations$Detected <- rowSums(designations[,5:7])
 
-
-## PLOTS
-# power.difference.makers <- dat %>%
-#   dplyr::group_by(h2, algorithm, nQTL, Rep) %>%
-#   yardstick::sens(truth = Simulated, estimate = Detected) %>%
-#   dplyr::mutate(.metric = "Power") %>%
-#   dplyr::filter(algorithm %in% c("EMMA","LMM-EXACT-LOCO"),
-#                 nQTL == 5) %>%
-#   tidyr::pivot_wider(names_from = algorithm, values_from = .estimate) %>%
-#   dplyr::mutate(DELTA = `LMM-EXACT-LOCO` - EMMA)
-sd <- dat %>%
-  dplyr::group_by(h2, algorithm, nQTL, Rep) %>%
-  yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power") %>%
-  dplyr::group_by(algorithm, h2, nQTL) %>%
-  dplyr::summarise(mean = mean(.estimate),
-                   sd = sd(.estimate)) %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2],
-                b = mean + sd,
-                a = mean - sd,
-                nQTL = as.factor(nQTL),
-                ymax = if_else(condition = b > 1, 
-                             true = 1-mean, 
-                             false = sd),
-                ymin = if_else(condition = a < 0, 
-                             true = (0-mean)*-1, 
-                             false = sd)
-                ) %>%
-  dplyr::select(-a,-b)
-levels(sd$nQTL) <- levels(summarized$nQTL)
-
-algorithm.A <- summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Power, colour = algorithm)) +
-  theme_bw() +
-  geom_point(position = position_dodge(width = 0.05)) +
-  geom_errorbar(data = sd, 
-                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin),
-                width = 0.05,
-                position=position_dodge(width=0.05)) + 
-  geom_line(position = position_dodge(width = 0.05)) +
+Power <- designations %>%
+  dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
+                Power = Detected.CV/Simulated,
+                Artefact.Rate = False.Discovery/Detected,
+                Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(h2, nQTL, algorithm) %>%
+  dplyr::summarise(mean.Power = mean(Power),
+                   sd.Power = sd(Power),
+                   n = n())
+Power$h2 <- as.numeric(as.character(Power$h2))
+algorithm.A <- Power %>%
+  ggplot(., mapping = aes(x = h2, y = mean.Power, colour = algorithm, group = algorithm )) + 
+  theme_bw() + 
+  # geom_pointrange(aes(ymin=mean.Power-sd.Power, ymax=mean.Power+sd.Power), position = position_dodge(width = 0.5)) +
+  geom_point(position = position_dodge(width = 0.01)) +
+  geom_line(position = position_dodge(width = 0.01)) +
+  facet_grid(~nQTL, scales = "free_x", space = "free_x") + 
   scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
+  ylim(c(0,1)) + 
   scale_y_continuous(breaks = seq(0,1,0.1), labels = seq(0,1,0.1)) + 
   theme(strip.text = element_text(size = 8),
         legend.position = "top", 
         panel.grid.minor = element_blank()) +
   labs(y = "Power",
        x = expression(italic(h^2)))
-algorithm.A
+  
 
-plots <- cowplot::plot_grid(algorithm.A + theme(legend.position = "none"), 
-                                       algorithm.B + theme(legend.position = "none"), 
-                                       labels = "AUTO", 
-                                       rel_widths = c(0.75, 1), 
-                                       ncol = 2)
-legends <- cowplot::plot_grid(cowplot::get_legend(algorithm.A), 
-                              cowplot::get_legend(algorithm.B), 
-                              ncol = 2, rel_widths = c(1.75,1))
-algorithm.figure <- cowplot::plot_grid(plots, legends, ncol = 1, rel_heights = c(6,1))
-ggsave(algorithm.figure, width = 10, height = 5, filename = "output/prelim.fig.1.png")
 
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = Precision, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  labs(title = "Precision v. Heritability",
-       x = expression(italic(h^2)))
+# plots <- cowplot::plot_grid(algorithm.A + theme(legend.position = "none"), 
+#                                        algorithm.B + theme(legend.position = "none"), 
+#                                        labels = "AUTO", 
+#                                        rel_widths = c(0.75, 1), 
+#                                        ncol = 2)
+# legends <- cowplot::plot_grid(cowplot::get_legend(algorithm.A), 
+#                               cowplot::get_legend(algorithm.B), 
+#                               ncol = 2, rel_widths = c(1.75,1))
+# algorithm.figure <- cowplot::plot_grid(plots, legends, ncol = 1, rel_heights = c(6,1))
+ggsave(algorithm.A, width = 8, height = 5, filename = "output/prelim.fig.1.png")
 
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = `Precision-Recall_AUC`, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  # ylim(c(0,1)) + 
-  labs(title = "Precision-Recall AUC v. Heritability",
-       x = expression(italic(h^2)))
 
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = F1score, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  # ylim(c(0,1)) + 
-  labs(title = "F-score v. Heritability",
-       x = expression(italic(h^2)))
 
-summarized %>%
-  dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = h2, y = FPR, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
-  labs(title = "FPR v. Heritability",
-       x = expression(italic(h^2)))
+
+
+
+# AF <- designations %>%
+#   dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
+#                 Power = Detected.CV/Simulated,
+#                 Artefact.Rate = if_else(is.na(False.Discovery/Detected), 
+#                                         true = 0, 
+#                                         false = (False.Discovery/Detected)),
+#                 Detected.CV.NS.Rate = if_else(is.na(CV.Not.Significant.In.Interval/Detected), 
+#                                               true = 0, 
+#                                               false = (CV.Not.Significant.In.Interval/Detected))) %>%
+#   dplyr::ungroup() %>%
+#   dplyr::group_by(h2, nQTL, algorithm) %>%
+#   dplyr::summarise(mean.AR = mean(Artefact.Rate),
+#                    sd.AR = sd(Artefact.Rate),
+#                    n = n())
+# AF$h2 <- as.numeric(as.character(AF$h2))
+# AF %>%
+#   ggplot(., mapping = aes(x = h2, y = mean.AR, colour = algorithm, group = algorithm )) + 
+#   theme_bw() + 
+#   # geom_pointrange(aes(ymin=mean.Power-sd.Power, ymax=mean.Power+sd.Power), position = position_dodge(width = 0.5)) +
+#   geom_point(position = position_dodge(width = 0.05)) +
+#   geom_line(position = position_dodge(width = 0.05)) +
+#   facet_grid(~nQTL, scales = "free_x", space = "free_x") + 
+#   scale_colour_manual(values = algorithm.palette, name = "Algorithm")
+# 
+
+
+
 ```
 
 ```{r, stats}
@@ -375,107 +323,6 @@ bootstrapped.PRAUC.5QTL %>%
 fiveQTL.PRAUC.PWRST
 ```
 
-```{r MAF+VE, echo=FALSE, message=FALSE, warning=FALSE}
-MAF.cuts <- seq(0, 1, by = 0.025)
-var.exp.cuts <- seq(0, 1, by = 0.1)
-
-binned.dat <- dat %>%
-  dplyr::mutate(MAF.bin = as.factor(cut(Frequency, breaks = MAF.cuts, include.lowest = F)),
-                VE.bin = as.factor(cut(Simulated.QTL.VarExp, breaks = var.exp.cuts, include.lowest = F)))
-
-MAF.power <- binned.dat %>%
-  dplyr::group_by(MAF.bin, algorithm, nQTL) %>%
-  yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power")
-MAF.resolution <- binned.dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL, MAF.bin) %>%
-  dplyr::group_by(MAF.bin, algorithm, nQTL) %>%
-  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size))
-MAF.summarized <- MAF.power %>%
-  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
-  dplyr::left_join(.,MAF.resolution) %>%
-  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
-                median.interval.Mb = `median(interval_size)`/1000000,
-                sd.interval.Mb = `sd(interval_size)`/1000000, 
-                .keep = "unused")
-
-VE.nest <- binned.dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::group_by(VE.bin, algorithm, nQTL) %>%
-  tidyr::nest()
-VE.power <- binned.dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::group_by(VE.bin, algorithm, nQTL) %>%
-  yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power")
-VE.resolution <- binned.dat %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::filter(!is.na(var.exp)) %>%
-  dplyr::select(CHROM, POS, Simulated, Frequency, interval_size, algorithm, h2, Simulated.QTL.VarExp, var.exp, nQTL, VE.bin) %>%
-  dplyr::group_by(VE.bin, algorithm, nQTL) %>%
-  dplyr::summarise(mean(interval_size), median(interval_size), sd(interval_size))
-VE.summarized <- VE.power %>%
-  tidyr::pivot_wider(names_from = .metric, values_from = .estimate) %>%
-  dplyr::left_join(., VE.resolution) %>%
-  dplyr::mutate(mean.interval.Mb = `mean(interval_size)`/1000000,
-                median.interval.Mb = `median(interval_size)`/1000000,
-                sd.interval.Mb = `sd(interval_size)`/1000000, 
-                .keep = "unused")
-
-
-## PLOTS
-MAF.summarized %>%
-  # dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = MAF.bin, y = Power, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
-  labs(title = "Power v. QTL MAF",
-       x = "MAF Bin")
-
-VE.summarized %>%
-  # dplyr::mutate(h2 = as.numeric(levels(h2))[h2]) %>%
-  ggplot(., mapping = aes(x = VE.bin, y = Power, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  ylim(c(0,1)) + 
-  labs(title = "Power v. QTL VE",
-       x = "VE Bin")
-
-MAF.summarized %>%
-  ggplot(., mapping = aes(x = MAF.bin, y = mean.interval.Mb, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  labs(title = "Resolution v. QTL MAF",
-       y = "Mean CI Width",
-       x = "MAF Bin")
-
-VE.summarized %>%
-  ggplot(., mapping = aes(x = VE.bin, y = mean.interval.Mb, colour = algorithm)) +
-  theme_bw() +
-  geom_jitter(width = 0.01, height = 0) +
-  geom_line(aes(group = algorithm)) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
-  scale_colour_manual(values = algorithm.palette, name = "Algorithm") + 
-  facet_grid(.~nQTL, scales = "free", space = "free") +  
-  labs(title = "Resolution v. QTL VE",
-       y = "Mean CI Width",
-       x = "VE Bin")
-```
 
 ```{r eval=FALSE, include=FALSE}
 EIGEN <- data.table::fread("data/dauer_total_independent_tests.txt") %>%
