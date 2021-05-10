@@ -27,6 +27,54 @@ require(wesanderson)
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/Documents/projects/NemaScan_Performance/")
 # setwd("~/Documents/AndersenLab/NemaScan_Performance/")
+
+
+#################################
+### 200 Strains (Summer GWA?) ###
+#################################
+
+# load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData")
+load(file = "data/NemaScan_Performance.SummerGWA_Sweptness_Sims.20210404.RData")
+dat.n200 <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7) %>%
+  dplyr::mutate(population.group = "200 Strain Sets")
+
+dat.n200$nQTL <- factor(dat.n200$nQTL, levels = c("5"))
+dat.n200$group.size <- as.factor(1000)
+dat.n200$CI <- as.factor(150)
+dat.n200$eval.method <- "Joint"
+dat.n200$aboveBF <- factor(dat.n200$aboveBF, levels = c("TRUE","FALSE"))
+dat.n200$vcf <- "20210121"
+
+
+
+
 ############################
 ### COMPLETE SUBSAMPLING ###
 ############################
@@ -105,23 +153,29 @@ dat.curated <- dat %>%
 
   
 
+
+
 #########################
 ## POPULATION FEATURES ##
 #########################
-
-load("data/NemaScan_Population_Metrics.Demography.SampleSize.Complete.Subsampled.20210111.RData")
-population.features.complete <- population.metrics.df %>%
+load("data/NemaScan_Population_Metrics.SummerGWA_Sweptness_Sims.20210404.RData")
+population.features.n200 <- population.metrics.df %>%
   dplyr::filter(!duplicated(strain_set)) %>%
   dplyr::mutate(population.group = "Complete Subsampling")
 
-load("data/NemaScan_Population_Metrics.Demography.SampleSize.Unswept.Subsampled.20210111.RData")
-population.features.unswept <- population.metrics.df %>%
-  dplyr::filter(!duplicated(strain_set)) %>%
-  dplyr::mutate(population.group = "Unswept Subsampling")
-
-population.features <- population.features.complete %>%
-  dplyr::full_join(., population.features.unswept) %>%
-  dplyr::filter(strain_set %in% dat.curated$strain_set)
+# load("data/NemaScan_Population_Metrics.Demography.SampleSize.Complete.Subsampled.20210111.RData")
+# population.features.complete <- population.metrics.df %>%
+#   dplyr::filter(!duplicated(strain_set)) %>%
+#   dplyr::mutate(population.group = "Complete Subsampling")
+# 
+# load("data/NemaScan_Population_Metrics.Demography.SampleSize.Unswept.Subsampled.20210111.RData")
+# population.features.unswept <- population.metrics.df %>%
+#   dplyr::filter(!duplicated(strain_set)) %>%
+#   dplyr::mutate(population.group = "Unswept Subsampling")
+# 
+# population.features <- population.features.complete %>%
+#   dplyr::full_join(., population.features.unswept) %>%
+#   dplyr::filter(strain_set %in% dat.curated$strain_set)
 
 #######################
 ## Haplotype Sharing ##
@@ -151,7 +205,7 @@ population.hapshare.quantiles <- pmap(.l = list(hapshare.nested$data,
 ## Chromosome Sweptness Metadata ##
 ###################################
 
-chrom.swept.nested <- population.features %>%
+chrom.swept.nested <- population.features.n200 %>%
   dplyr::select(strain_set, population.group, I, IV, V, X) %>%
     tidyr::pivot_longer(cols = c(I, IV, V, X), 
                         names_to = "CHROM.SWEPT", 
@@ -300,7 +354,47 @@ NemaScan simulation performance was assessed with the following experimental par
 
 ```{r echo=FALSE}
 pop.group.pal <- wes_palette(name = "Royal1", n = 2)
+designations <- dat.n200 %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
+  dplyr::group_by(designation, strain_set, nQTL, h2, Rep) %>%
+  dplyr::summarise(n = n()) %>%
+  tidyr::pivot_wider(names_from = designation, values_from = n)
+designations[is.na(designations)] <- 0
+designations$Detected <- rowSums(designations[,6:8])
 
+Power <- designations %>%
+  dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
+                Power = Detected.CV/Simulated,
+                Artefact.Rate = False.Discovery/Detected,
+                Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::summarise(mean.Power = mean(Power),
+                   n = n()) %>%
+  dplyr::full_join(population.features.n200)
+
+Power %>%
+  dplyr::filter(mean.Power < 0.1 | mean.Power > 0.3) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set, mean.Power), y = mean.Power)) +
+  theme_bw() +
+  # geom_line(position=position_dodge(width=0.2)) +
+  geom_point() +
+  facet_wrap(.~h2, scales = "free_x", drop = T) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+
+  
+  
+  
 dat.population.features.divergence %>%
   dplyr::filter(Simulated == TRUE,
                 !duplicated(QTL), 
@@ -496,6 +590,10 @@ power.samplesize <- dat.population.features.divergence %>%
                              true = (0-mean)*-1, 
                              false = sd)) %>%
   dplyr::select(-a,-b)
+
+power.samplesize %>%
+  dplyr::select(pop.size, mean, sd)
+
 power.plot.sample.size <- ggplot(power.samplesize, mapping = aes(x = as.factor(pop.size), y = mean, group = "identity")) + 
   theme_bw() + 
   geom_line(position=position_dodge(width=0.5)) +
@@ -1029,5 +1127,36 @@ ggplot(resolution.chrom.region) +
   theme(legend.position = "top") + 
   labs(x = "Population Size",
        y = "Mean ROI Size (Mb)")
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+load(file = "data/NemaScan_Performance.updated.MIPstrain.performance.20210119.RData")
+dat.erik.figure <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                var.exp  = as.numeric(var.exp), # watch
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size)) %>%
+  dplyr::filter(!algorithm %in% c("No Successful Mappings"),
+                algorithm == "MIXED",
+                CHROM != 7) %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = cut(Simulated.QTL.VarExp, breaks = unique(c(seq(0,1,by = 0.1)))))
 
 ```

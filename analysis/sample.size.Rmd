@@ -475,15 +475,14 @@ power.plot.variance.explained
 
 var.exp.dists <- dat.population.features %>%
   dplyr::filter(!is.na(CHROM)) %>%
-  dplyr::mutate(summary.var.exp = if_else(Simulated == TRUE, true = Simulated.QTL.VarExp, false = var.exp)) %>%
-  dplyr::mutate(summary.var.exp = if_else(Detected == FALSE, true = Simulated.QTL.VarExp, false = var.exp)) %>%
+  dplyr::mutate(summary.var.exp = if_else(Simulated == TRUE, true = Simulated.QTL.VarExp, false = var.exp)) %>% 
+  dplyr::mutate(summary.var.exp = if_else(Detected == TRUE, true = var.exp, false = Simulated.QTL.VarExp)) %>%
   tidyr::pivot_longer(cols = Detected, values_to = "Detection.Status") %>%
   dplyr::mutate(Detection.Status = if_else(Detection.Status == TRUE, 
                                            true = "Detected QTL; Realized Effect", 
                                            false = "Undetected QTL; Simulated Effect"),
                 Detection.Status = as.factor(Detection.Status))
-var.exp.dists$Detection.Status <- factor(var.exp.dists$Detection.Status, levels = c("Undetected QTL; Simulated Effect",
-                                                                                    "Detected QTL; Realized Effect"))
+
 dists <- ggplot(var.exp.dists, mapping = aes(x = summary.var.exp*100, fill = as.factor(pop.size))) +
   theme_bw(base_size = 12) + 
   geom_histogram(bins = 100) + 
@@ -496,6 +495,7 @@ dists <- ggplot(var.exp.dists, mapping = aes(x = summary.var.exp*100, fill = as.
         panel.grid = element_blank()) + 
   labs(x = "Variance Explained (%)",
        y = "Frequency")
+dists
 
 
 beavis <- dat.population.features.divergence %>%
@@ -515,6 +515,26 @@ beavis <- dat.population.features.divergence %>%
   labs(y = "Realized Variance Explained by QTL (%)",
        x = "Variance Explained by Simulated QTL (%)")
 beavis
+
+
+dat.population.features.divergence %>%
+  dplyr::select(QTL, peak_id, Simulated, Detected, Simulated.QTL.VarExp, var.exp, strain_set, Rep, pop.size, causal.variant) %>%
+  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
+  dplyr::arrange(pop.size) %>%
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100, y = var.exp*100, colour = as.factor(pop.size))) + 
+  theme_bw(base_size = 12) + 
+  geom_abline(slope = 1, colour = "grey") + 
+  geom_point(alpha = 0.1) +
+  geom_line(aes(group = interaction(strain_set, Rep, peak_id)), alpha = 0.05) + 
+  geom_smooth(se = F, formula = y ~ s(x, bs = "cs"), method = "gam") + 
+  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
+  facet_grid(pop.size~.) + 
+  theme(legend.position = "top", 
+        panel.grid = element_blank(),
+        strip.text = element_blank()) + 
+  labs(y = "Realized Variance Explained by QTL (%)",
+       x = "Variance Explained by Simulated QTL (%)")
+
 
 # 
 # dist.y.grob <- textGrob("Frequency", 
@@ -542,4 +562,11 @@ prelim.fig.3 <- cowplot::plot_grid(plots,
                                    ncol = 1, 
                                    rel_heights = c(10,1))
 ggsave(plot = prelim.fig.3, filename = "output/prelim.fig.3.png", height = 8, width = 10)
+```
+
+```{r}
+detected.QTL.nested <- dat.population.features %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::group_by(strain_set, peak_id, Rep) %>%
+  tidyr::nest()
 ```
