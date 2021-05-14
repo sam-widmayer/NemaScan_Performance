@@ -1,5 +1,5 @@
 ---
-title: "Quantifying the Beavis Effect of GWA in *C. elegans*"
+title: "What is the effect of sample size on GWA performance"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -22,6 +22,7 @@ require(ggbeeswarm)
 require(wesanderson)
 require(gridExtra)
 require(grid)
+require(magrittr)
 ```
 
 ## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
@@ -35,7 +36,7 @@ setwd("~/Documents/projects/NemaScan_Performance/")
 
 # load(file = "data/NemaScan_Performance.CeNDR2020_population_subsampling.20200925.RData")
 # load(file = "data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.20201230.RData")
-load(file = "data/NemaScan_Performance.Demography.SampleSize.Complete.Subsampled.v2.20210208.RData")
+load(file = "data/NemaScan_Performance.SampleSize.100step.20210512.20210512.RData")
 dat.complete <- simulation.metrics.df %>%
   tidyr::separate(col = sim,
                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
@@ -49,52 +50,324 @@ dat.complete <- simulation.metrics.df %>%
                 startPOS = as.numeric(startPOS),
                 peakPOS = as.numeric(peakPOS),
                 endPOS = as.numeric(endPOS),
-                var.exp  = as.numeric(var.exp), # watch
-                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
                 peak_id = as.numeric(peak_id),
                 BETA = as.numeric(BETA),
                 Effect = as.numeric(Effect),
                 Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, 
+                                        true = interval.log10p, 
+                                        false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
                 log10p = as.numeric(log10p),
-                interval_size = as.numeric(interval_size)) %>%
-  dplyr::filter(!algorithm %in% c("No Successful Mappings"),
-                algorithm == "MIXED",
-                CHROM != 7) %>%
-  dplyr::mutate(population.group = "Complete Subsampling")
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+sweep.summary <- data.table::fread("data/sweep_summary_20210121.tsv")
+strain.sets <- data.table::fread("output/sample.size.strains.txt", sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+population.demographics <- list()
+for(i in 1:nrow(strain.sets)){
+      strain.set <- strain.sets$strain_set[i]
+      strains <- suppressMessages(strain.sets$strains[i] %>%
+                                    strsplit(., split = ",") %>%
+                                    data.frame() %>%
+                                    `colnames<-`(c("isotype")) %>%
+                                    dplyr::left_join(., sweep.summary))
+      
+      
+      chr.pct.swept <- data.frame(t(colMeans(strains[,-1])))
+      chr.pct.swept$strain_set <- strain.set
+      population.demographics[[i]] <- suppressMessages(chr.pct.swept %>%
+                                                         dplyr::mutate(pop.size = nrow(strains)))
+  }
+population.demographics.df <- population.demographics %>%
+  dplyr::bind_rows()
+dat.population.features <- dat.complete %>%
+  dplyr::full_join(., population.demographics.df) %>%
+  dplyr::mutate(pop.size = as.factor(pop.size),
+                pop.type = as.factor(case_when(strain_set == "liberal.swept" ~ "Swept",
+                                     strain_set == "liberal.unswept" ~ "Unswept",
+                                     TRUE ~ "Random")))
+```
+
+## Simulation Parameters
+
+NemaScan simulation performance was assessed with the following experimental parameters:
+
+* ###### Number of Simulated QTL: ```r levels(as.factor(dat.population.features$nQTL))```
+* ###### Sample Population(s): ```r length(levels(as.factor(dat.population.features$strain_set)))```
+* ###### Number of Replicates per Regime: ```r max(as.numeric(dat.population.features$Rep))```
+* ###### QTL Effect Range: ```r levels(as.factor(dat.population.features$effect_range))```
+
+## Plots
+
+```{r echo=FALSE}
+dat.population.features$pop.size <- factor(dat.population.features$pop.size, levels = c("100","200","300","400","500","183","357"))
+pop.size.pal <- c(brewer.pal(5, "Greens"),"blue","orange")
+names(pop.size.pal) <- levels(dat.population.features$pop.size)
+
+pop.type.pal <- c("grey","orange","blue")
+names(pop.type.pal) <- levels(dat.population.features$pop.type)
+
+dat.population.features %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL), 
+                !is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect, colour = pop.size)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.8) + 
+  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
+  facet_grid(pop.size~CHROM, drop = TRUE, scales = "free") + 
+  labs(x = "Genomic position (Mb)",
+       y = "Causal QTL Effect",
+       title = "Where were QTL Simulated?")
+
+dat.population.features %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL)) %>%
+  ggplot(mapping = aes(x = Frequency, fill = pop.size)) +
+  geom_density(aes(y = stat(count)), alpha = 0.6, position = "stack") + 
+  theme_bw() +
+  scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
+  facet_wrap(.~pop.type, scales = "free_y") + 
+  theme(legend.position = "top") + 
+  labs(x = "Minor Allele Frequency",
+       y = "Simulated QTL Frequency")
 
 
-# ###########################
-# ### UNSWEPT SUBSAMPLING ###
-# ###########################
-# load(file = "data/NemaScan_Performance.Demography.SampleSize.Unswept.Subsampled.20210111.RData")
-# dat.unswept <- simulation.metrics.df %>%
-#   tidyr::separate(col = sim,
-#                   into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
-#                   sep = "_", remove = F) %>%
-#   tidyr::separate(col = QTL,
-#                   into = c("CHROM","POS"), 
-#                   sep = ":", remove = F) %>%
-#   dplyr::mutate(h2 = as.factor(h2),
+
+population.demographics.df %>%
+  dplyr::filter(!strain_set %in% c("liberal.swept", "liberal.unswept")) %>%
+  tidyr::pivot_longer(cols = -c(strain_set, pop.size), names_to = "CHROM", values_to = "PCT.SWEPT") %>%
+  ggplot(., mapping = aes(x = PCT.SWEPT*100)) +
+  theme_bw() + 
+  geom_density(aes(y = stat(count))) + 
+  facet_grid(pop.size~CHROM, scales = "free_x") +
+  theme(legend.position = "top",
+        panel.grid = element_blank()) + 
+  # scale_x_continuous(limits = c(0,100)) + 
+  # theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  labs(x = "Percent of Chromosome Containing Swept Haplotype",
+       y = "Number of Populations")
+```
+
+## Performance
+
+```{r echo=FALSE, warning=FALSE}
+
+designations <- dat.population.features %>%
+  dplyr::group_by(strain_set) %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  dplyr::filter(designation != "False.Discovery") %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = cut(Simulated.QTL.VarExp, breaks = unique(c(seq(0,0.1,by = 0.025), 
+                                                                              seq(0.1,0.9,by = 0.1))))) %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
+  dplyr::group_by(Sim.Var.Exp.Bin, nQTL, strain_set, designation, pop.size, pop.type) %>%
+  dplyr::summarise(n = n()) %>%
+  tidyr::pivot_wider(names_from = designation, values_from = n)
+designations[is.na(designations)] <- 0
+
+power.var.exp <- designations %>%
+  dplyr::mutate(Detected = Detected.CV + CV.Not.Significant.In.Interval,
+                Simulated = Detected.CV + CV.Not.Significant.In.Interval + Missed.CV,
+                Power = Detected.CV/Simulated) %>%
+  dplyr::group_by(Sim.Var.Exp.Bin, pop.size, pop.type) %>%
+  dplyr::summarise(mean.Power = mean(Power),
+                   sd.Power = sd(Power)) %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = gsub(as.character(Sim.Var.Exp.Bin), pattern = "\\(", replacement = "") %>%
+                  gsub(., pattern = "\\]", replacement = "") %>%
+                  gsub(., pattern = ",", replacement = "-")) %>%
+  tidyr::separate(col = Sim.Var.Exp.Bin, into = c("top","bottom"), sep = "-", remove = FALSE) %>%
+  dplyr::mutate(top = as.numeric(top)*100,
+                bottom = as.numeric(bottom)*100) %>%
+  tidyr::unite("Sim.Var.Exp.Bin", top:bottom, sep = "-", remove = FALSE)
+
+power.var.exp %>%
+  ggplot(., mapping = aes(x = reorder(Sim.Var.Exp.Bin, bottom), y = mean.Power, 
+                                                      fill = pop.size,
+                                                      group = pop.size)) + 
+  theme_bw(base_size = 12) + 
+  # geom_line(position=position_dodge(width=0.5), mapping = aes(colour = pop.size)) +
+  geom_hline(yintercept = 0.8, linetype = 4, alpha = 0.2) + 
+  geom_smooth(se = F, span = 0.5, aes(size = pop.type, colour = pop.size)) + 
+  scale_size_manual(values = c(1,0.5,0.5), guide = FALSE) + 
+  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
+  geom_errorbar(data = power.var.exp,
+                width = 0.5, alpha = 0.8,
+                mapping = aes(y = mean.Power, ymax = mean.Power+sd.Power, ymin = mean.Power-sd.Power, colour = pop.size),
+                position=position_dodge(width=0.5)) +
+  geom_point(position = position_dodge(width = 0.5), shape = 21) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  scale_fill_manual(values = pop.size.pal, name = "Sample Size") +
+  theme(legend.position = "top",
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(x = "Variance Explained by Simulated QTL (%)",
+       y = "Power")
+
+
+
+
+# Power <- designations %>%
+#   dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
+#                 Power = Detected.CV/Simulated,
+#                 Artefact.Rate = False.Discovery/Detected,
+#                 Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
+#   dplyr::group_by(nQTL, pop.size) %>%
+#   dplyr::summarise(mean.Power = mean(Power),
+#                    sd.Power = sd(Power)) %>%
+#   dplyr::mutate(b = mean.Power + sd.Power,
+#                 a = mean.Power - sd.Power,
 #                 nQTL = as.factor(nQTL),
-#                 POS = as.numeric(POS),
-#                 startPOS = as.numeric(startPOS),
-#                 peakPOS = as.numeric(peakPOS),
-#                 endPOS = as.numeric(endPOS),
-#                 var.exp  = as.numeric(var.exp), # watch
-#                 Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), # watch
-#                 peak_id = as.numeric(peak_id),
-#                 BETA = as.numeric(BETA),
-#                 Effect = as.numeric(Effect),
-#                 Frequency = as.numeric(Frequency),
-#                 log10p = as.numeric(log10p),
-#                 interval_size = as.numeric(interval_size)) %>%
-#   dplyr::filter(!algorithm %in% c("No Successful Mappings"),
-#                 algorithm == "MIXED",
-#                 CHROM != 7) %>%
-#   dplyr::mutate(population.group = "Unswept Subsampling")
+#                 ymax = if_else(condition = b > 1, 
+#                              true = 1-mean.Power, 
+#                              false = sd.Power),
+#                 ymin = if_else(condition = a < 0, 
+#                              true = (0-mean.Power)*-1, 
+#                              false = sd.Power)) %>%
+#   dplyr::select(-a,-b)
+# 
+# 
+# power.samplesize %>%
+#   dplyr::select(pop.size, mean, sd)
+# 
+# 
+# 
+# power.varexp <- dat.population.features %>%
+#   dplyr::filter(Simulated == TRUE) %>%
+#   dplyr::mutate(Sim.Var.Exp.Bin = cut(Simulated.QTL.VarExp, breaks = unique(c(seq(0,0.2,by = 0.025), 
+#                                                                               seq(0.2,0.6,by = 0.1))))) %>%
+#   dplyr::group_by(Sim.Var.Exp.Bin, strain_set) %>%
+#   yardstick::sens(truth = Simulated, estimate = Detected) %>%
+#   dplyr::mutate(.metric = "Power") %>%
+#   dplyr::filter(!is.na(.estimate), 
+#                 !is.na(Sim.Var.Exp.Bin)) %>%
+#   dplyr::left_join(., pop.size) %>%
+#   droplevels() %>%
+#   dplyr::group_by(pop.size, Sim.Var.Exp.Bin) %>%
+#   dplyr::summarise(mean = mean(.estimate),
+#                    sd = sd(.estimate),
+#                    n = n()) 
 
-  
 
+
+
+
+
+var.exp.dists <- dat.population.features %>%
+  dplyr::filter(!is.na(CHROM)) %>%
+  dplyr::mutate(summary.var.exp = if_else(Simulated == TRUE, true = Simulated.QTL.VarExp, false = var.exp)) %>% 
+  dplyr::mutate(summary.var.exp = if_else(Detected == TRUE, true = var.exp, false = Simulated.QTL.VarExp)) %>%
+  tidyr::pivot_longer(cols = Detected, values_to = "Detection.Status") %>%
+  dplyr::mutate(Detection.Status = if_else(Detection.Status == TRUE, 
+                                           true = "Detected QTL; Realized Effect", 
+                                           false = "Undetected QTL; Simulated Effect"),
+                Detection.Status = as.factor(Detection.Status))
+
+dists <- ggplot(var.exp.dists, mapping = aes(x = summary.var.exp*100, fill = as.factor(pop.size))) +
+  theme_bw(base_size = 12) + 
+  geom_histogram(bins = 100) + 
+  theme_bw() +
+  scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
+  scale_y_continuous(expand = c(0,0)) + 
+  scale_x_continuous(expand = c(0,0)) + 
+  facet_wrap(.~Detection.Status, scales = "free") + 
+  theme(legend.position = "top",
+        panel.grid = element_blank()) + 
+  labs(x = "Variance Explained (%)",
+       y = "Frequency")
+dists
+
+
+beavis <- dat.population.features.divergence %>%
+  dplyr::select(QTL, h2, Simulated, Detected, Simulated.QTL.VarExp, var.exp, strain_set, pop.size) %>%
+  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
+  dplyr::arrange(pop.size) %>%
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100, y = var.exp*100, colour = as.factor(pop.size))) + 
+  theme_bw(base_size = 12) + 
+  geom_abline(slope = 1, colour = "grey") + 
+  geom_point(alpha = 0.1) + 
+  geom_smooth(se = F, formula = y ~ s(x, bs = "cs"), method = "gam") + 
+  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
+  facet_grid(pop.size~.) + 
+  theme(legend.position = "top", 
+        panel.grid = element_blank(),
+        strip.text = element_blank()) + 
+  labs(y = "Realized Variance Explained by QTL (%)",
+       x = "Variance Explained by Simulated QTL (%)")
+beavis
+
+
+dat.population.features.divergence %>%
+  dplyr::select(QTL, peak_id, Simulated, Detected, Simulated.QTL.VarExp, var.exp, strain_set, Rep, pop.size, causal.variant) %>%
+  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
+  dplyr::arrange(pop.size) %>%
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100, y = var.exp*100, colour = as.factor(pop.size))) + 
+  theme_bw(base_size = 12) + 
+  geom_abline(slope = 1, colour = "grey") + 
+  geom_point(alpha = 0.1) +
+  geom_line(aes(group = interaction(strain_set, Rep, peak_id)), alpha = 0.05) + 
+  geom_smooth(se = F, formula = y ~ s(x, bs = "cs"), method = "gam") + 
+  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
+  facet_grid(pop.size~.) + 
+  theme(legend.position = "top", 
+        panel.grid = element_blank(),
+        strip.text = element_blank()) + 
+  labs(y = "Realized Variance Explained by QTL (%)",
+       x = "Variance Explained by Simulated QTL (%)")
+
+
+# 
+# dist.y.grob <- textGrob("Frequency", 
+#                    gp=gpar(fontsize=12), rot=90)
+# 
+# dist.x.grob <- textGrob("Variance Explained by Simulated QTL (%)", 
+#                    gp=gpar(fontsize=12))
+# 
+# #add to plot
+# dists.grobs <- grid.arrange(arrangeGrob(dists, left = dist.y.grob, bottom = dist.x.grob))
+
+ABC <- cowplot::plot_grid(dists + theme(legend.position = "none"), 
+                          power.plot.variance.explained + theme(legend.position = "none"),
+                          nrow = 2, 
+                          axis = "b")
+
+plots <- cowplot::plot_grid(ABC, 
+                            beavis + theme(legend.position = "none"), 
+                            nrow = 1)
+plots
+sample.size.legend <- cowplot::get_legend(power.plot.variance.explained)
+legends <- cowplot::plot_grid(sample.size.legend, ncol = 1)
+prelim.fig.3 <- cowplot::plot_grid(plots, 
+                                   legends, 
+                                   ncol = 1, 
+                                   rel_heights = c(10,1))
+ggsave(plot = prelim.fig.3, filename = "output/prelim.fig.3.png", height = 8, width = 10)
+```
+
+```{r}
+detected.QTL.nested <- dat.population.features %>%
+  dplyr::filter(Detected == TRUE) %>%
+  dplyr::group_by(strain_set, peak_id, Rep) %>%
+  tidyr::nest()
+```
+
+
+```{r eval=FALSE, include=FALSE}
 #########################
 ## POPULATION FEATURES ##
 #########################
@@ -269,304 +542,4 @@ dat.population.features.divergence <- dat.population.features.divergence %>%
   dplyr::mutate(CHROM.REGION = as.factor(CHROM.REGION))
 levels(dat.population.features.divergence$CHROM.REGION) <- c("Center","Left Arm", "Right Arm")
 dat.population.features.divergence$CHROM.REGION <- factor(dat.population.features.divergence$CHROM.REGION, levels = c("Left Arm","Center","Right Arm"))
-```
-
-## Simulation Parameters
-
-NemaScan simulation performance was assessed with the following experimental parameters:
-
-* ###### Number of Simulated QTL: ```r levels(as.factor(dat.population.features$nQTL))```
-* ###### Sample Population(s): ```r length(levels(as.factor(dat.population.features$strain_set)))```
-* ###### Number of Replicates per Regime: ```r max(as.numeric(dat.population.features$Rep))```
-* ###### QTL Effect Range: ```r levels(as.factor(dat.population.features$effect_range))```
-
-## Plots
-
-```{r echo=FALSE}
-pop.size.pal <- c("#E8E8AC","#b3b262","#6a6926","#313000","#161600")
-
-dat.population.features %>%
-  dplyr::filter(Simulated == TRUE,
-                !duplicated(QTL), 
-                !is.na(CHROM)) %>%
-  ggplot(mapping = aes(x = POS/1000000, y = Effect, fill = as.factor(pop.size))) + 
-  theme_bw() + 
-  geom_point(alpha = 0.5, shape = 21) + 
-  scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
-  facet_grid(.~CHROM, drop = TRUE, scales = "free") + 
-  labs(x = "Genomic position (Mb)",
-       y = "Causal QTL Effect",
-       title = "Where were QTL Simulated?")
-
-dat.population.features %>%
-  dplyr::filter(Simulated == TRUE,
-                !is.na(CHROM),
-                !duplicated(QTL)) %>%
-  ggplot(mapping = aes(x = Frequency, fill = as.factor(pop.size))) +
-  geom_density(alpha = 0.6, position = "stack") + 
-  theme_bw() +
-  scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
-  theme(legend.position = "top") + 
-  labs(x = "Minor Allele Frequency",
-       y = "Frequency of Simulated QTL (Smoothed Density)")
-
-# dat.population.features %>%
-#   dplyr::filter(Simulated == TRUE,
-#                 !is.na(CHROM),
-#                 !duplicated(QTL), 
-#                 !is.na(CHROM.REGION)) %>%
-#   dplyr::group_by(CHROM.REGION, pop.size, CHROM) %>%
-#   dplyr::summarise(n()) %>%
-#   ggplot(., mapping = aes(x = CHROM.REGION, y = `n()`, fill = as.factor(pop.size))) + 
-#   theme_bw() + 
-#   geom_col(position = "dodge") + 
-#   facet_grid(CHROM ~ .) + 
-#   scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
-#   theme(legend.position = "top") + 
-#   labs(x = "Chromosome Region",
-#        y = "Number of Simulated QTL")
-  
-dat.population.features %>%
-  dplyr::select(strain_set, pop.size) %>%
-  dplyr::filter(!duplicated(.)) %>%
-  dplyr::group_by(pop.size) %>%
-  dplyr::summarise(n()) %>%
-  dplyr::arrange(pop.size) %>%
-  tidyr::pivot_wider(names_from = pop.size, values_from = `n()`)
-
-dat.population.features %>%
-  dplyr::select(strain_set, quintile_I) %>%
-  dplyr::filter(!duplicated(.)) %>%
-  dplyr::group_by(quintile_I) %>%
-  dplyr::summarise(n())
-
-dat.population.features %>%
-  dplyr::select(strain_set, quintile_IV) %>%
-  dplyr::filter(!duplicated(.)) %>%
-  dplyr::group_by(quintile_IV) %>%
-  dplyr::summarise(n())
-
-dat.population.features %>%
-  dplyr::select(strain_set, quintile_V) %>%
-  dplyr::filter(!duplicated(.)) %>%
-  dplyr::group_by(quintile_V) %>%
-  dplyr::summarise(n())
-
-dat.population.features %>%
-  dplyr::select(strain_set, quintile_X) %>%
-  dplyr::filter(!duplicated(.)) %>%
-  dplyr::group_by(quintile_X) %>%
-  dplyr::summarise(n())
-
-population.features %>%
-  tidyr::pivot_longer(cols = c(I, IV, V, X), names_to = "CHROM.SWEPT", values_to = "PCT.SWEPT") %>%
-  ggplot(., mapping = aes(x = PCT.SWEPT*100, fill = as.factor(pop.size))) +
-  theme_bw() + 
-  geom_density(alpha = 0.6) +
-  facet_grid(.~CHROM.SWEPT) + 
-    theme(legend.position = "top",
-        panel.grid = element_blank()) + 
-  scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
-  labs(x = "Percent of Strains Containing 'Swept' Chromosome",
-       y = "Density")
-
-population.features %>%
-  tidyr::pivot_longer(cols = contains("hapshare"), names_to = "CHROM.HAPSHARE") %>%
-  tidyr::separate(col = CHROM.HAPSHARE, c("stat","chrom","hapshare")) %>%
-  dplyr::select(-hapshare) %>%
-  dplyr::filter(stat == "mean") %>%
-  ggplot(., mapping = aes(x = value*100)) +
-  theme_bw() + 
-  geom_density() + 
-  facet_grid(pop.size~chrom, scales = "free") + 
-  theme(legend.position = "top",
-        panel.grid = element_blank()) + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  labs(x = "Percent of Chromosome Containing Swept Haplotype",
-       y = "Density")
-```
-
-## Performance
-
-```{r echo=FALSE, warning=FALSE}
-pop.size <- dat.population.features %>%
-  dplyr::select(strain_set, pop.size) %>%
-  dplyr::filter(!duplicated(.))
-
-
-power.samplesize <- dat.population.features.divergence %>%
-  dplyr::group_by(strain_set) %>%
-  yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power") %>%
-  dplyr::left_join(., pop.size) %>%
-  dplyr::group_by(pop.size) %>%
-  dplyr::summarise(mean = mean(.estimate),
-                   sd = sd(.estimate),
-                   n = n()) %>%
-  dplyr::mutate(b = mean + sd,
-                a = mean - sd,
-                ymax = if_else(condition = b > 1, 
-                             true = 1-mean, 
-                             false = sd),
-                ymin = if_else(condition = a < 0, 
-                             true = (0-mean)*-1, 
-                             false = sd)) %>%
-  dplyr::select(-a,-b)
-
-power.samplesize %>%
-  dplyr::select(pop.size, mean, sd)
-
-
-
-power.varexp <- dat.population.features %>%
-  dplyr::filter(Simulated == TRUE) %>%
-  dplyr::mutate(Sim.Var.Exp.Bin = cut(Simulated.QTL.VarExp, breaks = unique(c(seq(0,0.2,by = 0.025), 
-                                                                              seq(0.2,0.6,by = 0.1))))) %>%
-  dplyr::group_by(Sim.Var.Exp.Bin, strain_set) %>%
-  yardstick::sens(truth = Simulated, estimate = Detected) %>%
-  dplyr::mutate(.metric = "Power") %>%
-  dplyr::filter(!is.na(.estimate), 
-                !is.na(Sim.Var.Exp.Bin)) %>%
-  dplyr::left_join(., pop.size) %>%
-  droplevels() %>%
-  dplyr::group_by(pop.size, Sim.Var.Exp.Bin) %>%
-  dplyr::summarise(mean = mean(.estimate),
-                   sd = sd(.estimate),
-                   n = n()) %>%
-  dplyr::mutate(b = mean + sd,
-                a = mean - sd,
-                ymax = if_else(condition = b > 1, 
-                             true = 1-mean, 
-                             false = sd),
-                ymin = if_else(condition = a < 0, 
-                             true = (0-mean)*-1, 
-                             false = sd)) %>%
-  dplyr::mutate(Sim.Var.Exp.Bin = gsub(as.character(Sim.Var.Exp.Bin), pattern = "\\(", replacement = "") %>%
-                  gsub(., pattern = "\\]", replacement = "") %>%
-                  gsub(., pattern = ",", replacement = "-")) %>%
-  dplyr::select(-a,-b) %>%
-  tidyr::separate(col = Sim.Var.Exp.Bin, into = c("top","bottom"), sep = "-", remove = FALSE) %>%
-  dplyr::mutate(top = as.numeric(top)*100,
-                bottom = as.numeric(bottom)*100) %>%
-  tidyr::unite("Sim.Var.Exp.Bin", top:bottom, sep = "-", remove = FALSE)
-
-
-power.plot.variance.explained <- ggplot(power.varexp, 
-                                        mapping = aes(x = reorder(Sim.Var.Exp.Bin, bottom), y = mean, 
-                                                      colour = as.factor(pop.size),
-                                                      group = as.factor(pop.size))) + 
-  theme_bw(base_size = 12) + 
-  geom_line(position=position_dodge(width=0.5), mapping = aes(colour = as.factor(pop.size))) +
-  geom_point(position = position_dodge(width = 0.5)) +
-  geom_errorbar(data = power.varexp,
-                width = 0.5, alpha = 0.6,
-                mapping = aes(y = mean, ymax = mean+ymax, ymin = mean-ymin, colour = as.factor(pop.size)),
-                position=position_dodge(width=0.5)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
-  # scale_fill_brewer(palette = "PuOr", name = "Sample Size") +
-  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
-  theme(legend.position = "top",
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  labs(x = "Variance Explained by Simulated QTL (%)",
-       y = "Power")
-power.plot.variance.explained
-
-
-
-var.exp.dists <- dat.population.features %>%
-  dplyr::filter(!is.na(CHROM)) %>%
-  dplyr::mutate(summary.var.exp = if_else(Simulated == TRUE, true = Simulated.QTL.VarExp, false = var.exp)) %>% 
-  dplyr::mutate(summary.var.exp = if_else(Detected == TRUE, true = var.exp, false = Simulated.QTL.VarExp)) %>%
-  tidyr::pivot_longer(cols = Detected, values_to = "Detection.Status") %>%
-  dplyr::mutate(Detection.Status = if_else(Detection.Status == TRUE, 
-                                           true = "Detected QTL; Realized Effect", 
-                                           false = "Undetected QTL; Simulated Effect"),
-                Detection.Status = as.factor(Detection.Status))
-
-dists <- ggplot(var.exp.dists, mapping = aes(x = summary.var.exp*100, fill = as.factor(pop.size))) +
-  theme_bw(base_size = 12) + 
-  geom_histogram(bins = 100) + 
-  theme_bw() +
-  scale_fill_manual(values = pop.size.pal, name = "Sample Size") + 
-  scale_y_continuous(expand = c(0,0)) + 
-  scale_x_continuous(expand = c(0,0)) + 
-  facet_wrap(.~Detection.Status, scales = "free") + 
-  theme(legend.position = "top",
-        panel.grid = element_blank()) + 
-  labs(x = "Variance Explained (%)",
-       y = "Frequency")
-dists
-
-
-beavis <- dat.population.features.divergence %>%
-  dplyr::select(QTL, h2, Simulated, Detected, Simulated.QTL.VarExp, var.exp, strain_set, pop.size) %>%
-  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
-  dplyr::arrange(pop.size) %>%
-  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100, y = var.exp*100, colour = as.factor(pop.size))) + 
-  theme_bw(base_size = 12) + 
-  geom_abline(slope = 1, colour = "grey") + 
-  geom_point(alpha = 0.1) + 
-  geom_smooth(se = F, formula = y ~ s(x, bs = "cs"), method = "gam") + 
-  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
-  facet_grid(pop.size~.) + 
-  theme(legend.position = "top", 
-        panel.grid = element_blank(),
-        strip.text = element_blank()) + 
-  labs(y = "Realized Variance Explained by QTL (%)",
-       x = "Variance Explained by Simulated QTL (%)")
-beavis
-
-
-dat.population.features.divergence %>%
-  dplyr::select(QTL, peak_id, Simulated, Detected, Simulated.QTL.VarExp, var.exp, strain_set, Rep, pop.size, causal.variant) %>%
-  dplyr::filter(Simulated == TRUE, Detected == TRUE) %>%
-  dplyr::arrange(pop.size) %>%
-  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100, y = var.exp*100, colour = as.factor(pop.size))) + 
-  theme_bw(base_size = 12) + 
-  geom_abline(slope = 1, colour = "grey") + 
-  geom_point(alpha = 0.1) +
-  geom_line(aes(group = interaction(strain_set, Rep, peak_id)), alpha = 0.05) + 
-  geom_smooth(se = F, formula = y ~ s(x, bs = "cs"), method = "gam") + 
-  scale_colour_manual(values = pop.size.pal, name = "Sample Size") +
-  facet_grid(pop.size~.) + 
-  theme(legend.position = "top", 
-        panel.grid = element_blank(),
-        strip.text = element_blank()) + 
-  labs(y = "Realized Variance Explained by QTL (%)",
-       x = "Variance Explained by Simulated QTL (%)")
-
-
-# 
-# dist.y.grob <- textGrob("Frequency", 
-#                    gp=gpar(fontsize=12), rot=90)
-# 
-# dist.x.grob <- textGrob("Variance Explained by Simulated QTL (%)", 
-#                    gp=gpar(fontsize=12))
-# 
-# #add to plot
-# dists.grobs <- grid.arrange(arrangeGrob(dists, left = dist.y.grob, bottom = dist.x.grob))
-
-ABC <- cowplot::plot_grid(dists + theme(legend.position = "none"), 
-                          power.plot.variance.explained + theme(legend.position = "none"),
-                          nrow = 2, 
-                          axis = "b")
-
-plots <- cowplot::plot_grid(ABC, 
-                            beavis + theme(legend.position = "none"), 
-                            nrow = 1)
-plots
-sample.size.legend <- cowplot::get_legend(power.plot.variance.explained)
-legends <- cowplot::plot_grid(sample.size.legend, ncol = 1)
-prelim.fig.3 <- cowplot::plot_grid(plots, 
-                                   legends, 
-                                   ncol = 1, 
-                                   rel_heights = c(10,1))
-ggsave(plot = prelim.fig.3, filename = "output/prelim.fig.3.png", height = 8, width = 10)
-```
-
-```{r}
-detected.QTL.nested <- dat.population.features %>%
-  dplyr::filter(Detected == TRUE) %>%
-  dplyr::group_by(strain_set, peak_id, Rep) %>%
-  tidyr::nest()
 ```

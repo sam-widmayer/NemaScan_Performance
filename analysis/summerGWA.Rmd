@@ -1,0 +1,867 @@
+---
+title: "Population Differences in Mapping Performance"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+require(tidyverse)
+require(tidymodels)
+require(nationalparkcolors)
+require(RColorBrewer)
+require(GenomicRanges)
+require(cowplot)
+require(workflowr)
+require(ggbeeswarm)
+require(wesanderson)
+require(ggnewscale)
+```
+
+## Analysis date: `r format(Sys.time(), '%B %d, %Y')`
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+setwd("~/Documents/projects/NemaScan_Performance/")
+chrom.swept.bin <- function(data, chrom){
+  lowest <- data %>%
+    dplyr::filter(pct.swept < 0.20) %>%
+    dplyr::mutate(swept.bin = "0-0.20") 
+  
+  data %>%
+    dplyr::filter(pct.swept > 0.20) %>%
+    mutate(swept.bin = cut(pct.swept, c(0.2, 0.5, 1), include.lowest = F)) %>%
+    dplyr::mutate(swept.bin = gsub(swept.bin, pattern = "\\(", replacement = "") %>%
+                    gsub(., pattern = "\\]", replacement = "") %>%
+                    gsub(., pattern = ",", replacement = "-")) %>%
+    dplyr::full_join(., lowest) %>%
+    dplyr::mutate(chrom = chrom, 
+                  swept.bin = as.factor(swept.bin))
+}
+chrom.swept.liberal.bin <- function(data, chrom){
+  lowest <- data %>%
+    dplyr::filter(pct.swept < 0.30) %>%
+    dplyr::mutate(swept.bin = "0-0.30") 
+  
+  data %>%
+    dplyr::filter(pct.swept > 0.30) %>%
+    mutate(swept.bin = cut(pct.swept, c(0.3, 1), include.lowest = F)) %>%
+    dplyr::mutate(swept.bin = gsub(swept.bin, pattern = "\\(", replacement = "") %>%
+                    gsub(., pattern = "\\]", replacement = "") %>%
+                    gsub(., pattern = ",", replacement = "-")) %>%
+    dplyr::full_join(., lowest) %>%
+    dplyr::mutate(chrom = chrom, 
+                  swept.bin = as.factor(swept.bin))
+}
+
+sweep.summary <- data.table::fread("data/sweep_summary_20210121.tsv")
+sweptness.nested <- sweep.summary %>%
+  tidyr::pivot_longer(cols = -isotype, names_to = "chrom", values_to = "pct.swept") %>%
+  dplyr::group_by(chrom) %>%
+  tidyr::nest()
+
+swept.coarse.bins <- purrr::map2(sweptness.nested$data, sweptness.nested$chrom, chrom.swept.bin) %>%
+  Reduce(rbind, .) %>%
+  dplyr::filter(!chrom %in% c("II", "III")) %>%
+  dplyr::group_by(isotype, swept.bin) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(names_from = swept.bin, values_from = `n()`) 
+
+lib.swept.coarse.bins <- purrr::map2(sweptness.nested$data, sweptness.nested$chrom, chrom.swept.liberal.bin) %>%
+  Reduce(rbind, .) %>%
+  dplyr::filter(!chrom %in% c("II", "III")) %>%
+  dplyr::group_by(isotype, swept.bin) %>%
+  dplyr::summarise(n()) %>%
+  tidyr::pivot_wider(names_from = swept.bin, values_from = `n()`) 
+
+conservative.unswept.isotypes <- swept.coarse.bins %>% 
+  dplyr::filter(`0-0.20` >= 3) %>%
+  dplyr::select(isotype) %>%
+  dplyr::distinct(.)
+
+conservative.swept.isotypes <- swept.coarse.bins %>% 
+  dplyr::filter(`0.5-1` >= 3) %>%
+  dplyr::select(isotype) %>%
+  dplyr::distinct(.)
+
+liberal.swept.isotypes <- lib.swept.coarse.bins %>% 
+  dplyr::filter(`0.3-1` >= 1) %>%
+  dplyr::select(isotype) %>%
+  dplyr::distinct(.)
+
+liberal.unswept.isotypes <- lib.swept.coarse.bins %>% 
+  dplyr::select(isotype) %>%
+  dplyr::filter(!isotype %in% liberal.swept.isotypes$isotype) %>%
+  dplyr::distinct(.)
+
+population.demographics <- function(x){
+  foo <- data.table::fread(paste("output",x,sep = "/"), sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+  
+  population.demographics <- list()
+  for(i in 1:nrow(foo)){
+      strain.set <- foo$strain_set[i]
+      strains <- suppressMessages(foo$strains[i] %>%
+                                    strsplit(., split = ",") %>%
+                                    data.frame() %>%
+                                    `colnames<-`(c("isotype")) %>%
+                                    dplyr::left_join(., sweep.summary))
+      
+      
+      chr.pct.swept <- data.frame(t(colMeans(strains[,-1])))
+      chr.pct.swept$strain_set <- strain.set
+      population.sweep.group.pct <- strains %>%
+        dplyr::mutate(sweep.group = case_when(isotype %in% conservative.swept.isotypes$isotype ~ "strict swept",
+                                              isotype %in% conservative.unswept.isotypes$isotype ~ "strict unswept",
+                                              isotype %in% liberal.swept.isotypes$isotype ~ "soft swept",
+                                              isotype %in% liberal.unswept.isotypes$isotype ~ "soft unswept",
+                                        TRUE ~ "mixed")) %>%
+        dplyr::group_by(sweep.group) %>%
+        dplyr::summarise(pct.sweep.group = n()/nrow(strains)) %>%
+        tidyr::pivot_wider(names_from = sweep.group, values_from = pct.sweep.group) %>%
+        dplyr::mutate(strain_set = strain.set)
+      
+      population.demographics[[i]] <- suppressMessages(population.sweep.group.pct %>%
+                                                         dplyr::select(strain_set, everything()) %>%
+                                                         dplyr::full_join(., chr.pct.swept) %>%
+                                                         dplyr::mutate(pop.size = nrow(strains)))
+  }
+  population.demographics %>%
+    dplyr::bind_rows()
+  
+}
+subsampled.pops <- list.files(path = "output/", pattern = "subsampled.strains_20210409")
+subsampled.demographics <- purrr::map(subsampled.pops, population.demographics) %>% 
+  Reduce(rbind,.) %>%
+  dplyr::mutate(population.group = "Subsampled")
+
+conservative.unswept.demographics <- population.demographics("subsampled.unswept.strains_20210409_n144_reps50.txt") %>%
+  dplyr::mutate(population.group = "Strict Unswept")
+
+conservative.swept.demographics <- population.demographics("subsampled.swept.strains_20210409_n144_reps50.txt") %>%
+  dplyr::mutate(population.group = "Strict Swept")
+
+liberal.unswept.demographics <- population.demographics("subsampled.liberal.unswept.strains_20210426_n144_reps50.txt") %>%
+  dplyr::mutate(population.group = "Soft Unswept")
+
+liberal.swept.demographics <- population.demographics("subsampled.liberal.swept.strains_20210426_n144_reps50.txt") %>%
+  dplyr::mutate(population.group = "Soft Swept")
+
+liberal.swept.demographics.192 <- population.demographics("subsampled.liberal.swept.strains_20210504_n192_reps50.txt") %>%
+  dplyr::mutate(population.group = "Soft Swept")
+
+all.liberal.swept.unswept.demographics <- purrr::map(list("liberal.unswept.isotypes.txt","liberal.swept.isotypes.txt"), 
+                                                     population.demographics) %>%
+  dplyr::bind_rows()
+all.liberal.swept.unswept.demographics$population.group <- c("Full Liberal Unswept","Full Liberal Swept")
+pop.demographics <- subsampled.demographics %>%
+  dplyr::full_join(., conservative.swept.demographics) %>%
+  dplyr::full_join(., conservative.unswept.demographics)%>%
+  dplyr::full_join(., liberal.swept.demographics)%>%
+  dplyr::full_join(., liberal.unswept.demographics) %>%
+  dplyr::full_join(., liberal.swept.demographics.192) %>%
+  dplyr::full_join(., all.liberal.swept.unswept.demographics)
+
+
+
+## subsample (n = 96, 144, 192); conservative swept (n = 144)
+load(file = "data/NemaScan_Performance.SummerGWA_Sims.20210416.RData")
+summer.GWA.dat.1 <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+# Unswept n = 144
+load(file = "data/NemaScan_Performance.SummerGWA_Sims_Unswept144.20210423.RData")
+summer.GWA.dat.2.con.unswept <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+# liberal unswept (n = 144)
+load(file = "data/NemaScan_Performance.SummerGWA_Sims_LiberalUnswept144.20210502.RData")
+summer.GWA.dat.3.lib.unswept <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+
+# liberal swept (n = 144)
+load(file = "data/NemaScan_Performance.SummerGWA_Sims_LiberalSwept144.20210501.RData")
+summer.GWA.dat.4.lib.swept <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+
+# liberal swept (n = 192)
+load(file = "data/NemaScan_Performance.SummerGWA_Sims_LiberalSwept192.20210506.RData")
+summer.GWA.dat.6.lib.swept.192 <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+# full sampling of liberal swept and unswept populations
+load(file = "data/NemaScan_Performance.SummerGWA_Sims_AllLiberalSweptUnswept.20210502.RData")
+summer.GWA.dat.5.full.lib.swept.unswept <- simulation.metrics.df %>%
+  tidyr::separate(col = sim,
+                  into = c("nQTL","Rep","h2","MAF","effect_range","strain_set"), 
+                  sep = "_", remove = F) %>%
+  tidyr::separate(col = QTL,
+                  into = c("CHROM","POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(h2 = as.factor(h2),
+                nQTL = as.factor(nQTL),
+                POS = as.numeric(POS),
+                startPOS = as.numeric(startPOS),
+                peakPOS = as.numeric(peakPOS),
+                endPOS = as.numeric(endPOS),
+                interval.var.exp  = as.numeric(interval.var.exp),
+                Simulated.QTL.VarExp = as.numeric(Simulated.QTL.VarExp), 
+                peak_id = as.numeric(peak_id),
+                BETA = as.numeric(BETA),
+                Effect = as.numeric(Effect),
+                Frequency = as.numeric(Frequency),
+                log10p = dplyr::if_else(Simulated == FALSE, true = interval.log10p, false = log10p), # false discoveries inherit the log10p value of the peak marker for the interval
+                log10p = as.numeric(log10p),
+                interval_size = as.numeric(interval_size),
+                aboveBF = dplyr::case_when(aboveBF == 1 ~ TRUE, 
+                                           aboveBF == 0 ~ FALSE,
+                                           is.na(aboveBF) ~ TRUE), # false discoveries by definition exceed significance threshold
+                aboveBF = as.factor(aboveBF)) %>%
+  dplyr::filter(!c(Detected == FALSE & aboveBF == TRUE),
+                CHROM != 7)
+
+
+all.dat <- summer.GWA.dat.1 %>% 
+  dplyr::full_join(., summer.GWA.dat.2.con.unswept) %>% 
+  dplyr::full_join(., summer.GWA.dat.3.lib.unswept) %>% 
+  dplyr::full_join(., summer.GWA.dat.4.lib.swept) %>% 
+  dplyr::full_join(., summer.GWA.dat.5.full.lib.swept.unswept) %>%
+  dplyr::full_join(., summer.GWA.dat.6.lib.swept.192)
+
+
+summer.GWA.df <- pop.demographics %>%
+  dplyr::select(strain_set, pop.size, population.group) %>%
+  dplyr::distinct() %>%
+  dplyr::left_join(all.dat,.) %>%
+  dplyr::filter(pop.size > 50)
+
+```
+
+## Plots
+
+```{r echo=FALSE}
+
+summer.GWA.df %>%
+  dplyr::filter(Simulated == TRUE,
+                !duplicated(QTL), 
+                !is.na(CHROM)) %>%
+  ggplot(mapping = aes(x = POS/1000000, y = Effect)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.5) + 
+  facet_grid(population.group+pop.size~CHROM, drop = TRUE, scales = "free") + 
+  labs(x = "Genomic position (Mb)",
+       y = "QTL Effect",
+       title = "Where were QTL Simulated?")
+
+summer.GWA.df %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL)) %>%
+  ggplot(mapping = aes(x = Frequency)) +
+  geom_density(alpha = 0.6) + 
+  theme_bw() +
+  facet_wrap(population.group~pop.size) +
+  theme(legend.position = "top") + 
+  labs(x = "Minor Allele Frequency",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+summer.GWA.df %>%
+  dplyr::filter(Simulated == TRUE,
+                !is.na(CHROM),
+                !duplicated(QTL)) %>%
+  ggplot(., mapping = aes(x = Simulated.QTL.VarExp*100)) +
+  theme_bw() + 
+  geom_density(alpha = 0.6) + 
+  theme_bw() +
+  facet_wrap(population.group~pop.size) + 
+  # scale_fill_manual(values = c("#358F39","#ADF6B1",
+  #                              "#5E4049","#AD6177","grey","#138019","purple"), 
+  #                   name = "Population Designation") +
+  # scale_fill_manual(values = c("#16E7CF","#FF42A1","#0076BA"), name = "Population Designation") + 
+  theme(legend.position = "top") + 
+  labs(x = "Variance Explained by Simulated QTL (%)",
+       y = "Frequency of Simulated QTL (Smoothed Density)")
+
+
+designations <- summer.GWA.df %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
+  dplyr::group_by(designation, strain_set, nQTL, h2, Rep) %>%
+  dplyr::summarise(n = n()) %>%
+  tidyr::pivot_wider(names_from = designation, values_from = n)
+designations[is.na(designations)] <- 0
+designations$Detected <- rowSums(designations[,5:7])
+
+Power <- designations %>%
+  dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
+                Power = Detected.CV/Simulated,
+                Artefact.Rate = False.Discovery/Detected,
+                Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::summarise(mean.Power = mean(Power),
+                   sd.Power = sd(Power),
+                   n = n()) %>%
+  dplyr::left_join(.,pop.demographics) %>%
+  dplyr::mutate(pop.size = as.factor(pop.size),
+                population.group = as.factor(population.group))
+
+Power$population.group <- factor(Power$population.group, levels = c("Strict Swept","Soft Swept",
+                                                                    "Strict Unswept","Soft Unswept",
+                                                                    "Subsampled",
+                                                                    "Full Liberal Swept","Full Liberal Unswept"))
+
+
+
+Power %>%
+  dplyr::filter(!population.group %in% c("Full Liberal Swept","Full Liberal Unswept")) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,mean.Power), y = mean.Power, fill = population.group)) + 
+  theme_bw() + 
+  geom_pointrange(aes(ymin=mean.Power-sd.Power, ymax=mean.Power+sd.Power), shape = 21) +
+  scale_fill_manual(values = c("#358F39","#ADF6B1",
+                               "#5E4049","#AD6177","grey","#138019","purple"), 
+                    name = "Population Designation") +
+  # scale_colour_manual(values = park_palette(name = "Hawaii", 3), name = "Heritability") + 
+  facet_grid(~pop.size, scales = "free_x", space = "free_x") + 
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "top") + 
+  labs(title = "Summer GWA Sample Populations: Causal Variant Detected as Significant (Power)",
+       y = "Mean Power",
+       x = "Sample Population") + 
+  ggsave("output/summerGWA.strain.set.power.png", height = 8, width = 25)
+
+
+
+
+Artefact.Rate <- designations %>%
+  dplyr::mutate(Simulated = as.numeric(as.character(nQTL)),
+                Power = Detected.CV/Simulated,
+                Artefact.Rate = False.Discovery/Detected,
+                Detected.CV.NS.Rate = CV.Not.Significant.In.Interval/Detected) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(strain_set, h2) %>%
+  dplyr::mutate(Artefact.Rate = if_else(is.na(Artefact.Rate), true = 0, false = Artefact.Rate)) %>%
+  dplyr::summarise(mean.Artefact.Rate = mean(Artefact.Rate),
+                   sd.Artefact.Rate = sd(Artefact.Rate),
+                   n = n()) %>%
+  dplyr::left_join(.,pop.demographics) %>%
+  dplyr::mutate(pop.size = as.factor(pop.size),
+                population.group = as.factor(population.group))
+Artefact.Rate$population.group <- factor(Artefact.Rate$population.group, levels = c("Strict Swept","Soft Swept",
+                                                                    "Strict Unswept","Soft Unswept",
+                                                                    "Subsampled",
+                                                                    "Full Liberal Swept","Full Liberal Unswept"))
+
+Artefact.Rate %>%
+  dplyr::filter(!population.group %in% c("Full Liberal Swept","Full Liberal Unswept")) %>%
+  ggplot(., mapping = aes(x = reorder(strain_set,mean.Artefact.Rate), y = mean.Artefact.Rate, fill = population.group)) + 
+  theme_bw() + 
+  geom_pointrange(aes(ymin=mean.Artefact.Rate-sd.Artefact.Rate, ymax=mean.Artefact.Rate+sd.Artefact.Rate), shape = 21) +
+  scale_fill_manual(values = c("#358F39","#ADF6B1",
+                               "#5E4049","#AD6177","grey","#138019","purple"), 
+                    name = "Population Designation") +
+  # scale_colour_manual(values = park_palette(name = "Hawaii", 3), name = "Heritability") + 
+  facet_grid(~pop.size, scales = "free", space = "free") + 
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "top") + 
+  labs(title = "Summer GWA Sample Populations: Unsimulated QTL Detected",
+       y = "Mean Artefact Rate",
+       x = "Sample Population") + 
+  ggsave("output/summerGWA.strain.set.FDR.png", height = 8, width = 25)
+
+
+
+all.independent.test.files <- list.files("data", pattern = "independent.tests.csv")
+independent.tests <- purrr::map(all.independent.test.files, .f = function(x){data.table::fread(paste("data",x,sep = "/"))}) %>%
+  Reduce(rbind,.)
+
+
+summer.GWA.perform <- Power %>%
+  dplyr::full_join(.,Artefact.Rate) %>%
+  dplyr::left_join(., independent.tests)
+
+summer.GWA.perform %>%
+  dplyr::filter(!population.group %in% c("Full Liberal Swept","Full Liberal Unswept")) %>%
+  ggplot(.) + 
+  theme_bw() + 
+  geom_point(aes(x = mean.Power, y = mean.Artefact.Rate, fill = population.group), shape = 21) + 
+  # scale_colour_manual(values = park_palette(name = "Hawaii", 3), name = "Heritability") + 
+  scale_fill_manual(values = c("grey","#358F39","#AD6177","#ADF6B1","#5E4049"), 
+                    name = "Population Designation") + 
+  new_scale_color() +
+  geom_smooth(se = F, mapping = aes(x = mean.Power, y = mean.Artefact.Rate, group = population.group, colour = population.group)) + 
+  scale_colour_manual(values = c("grey","#358F39","#AD6177","#ADF6B1","#5E4049"), 
+                    name = "Population Designation") + 
+  facet_grid(h2~pop.size, scales = "free_y")  + 
+  theme(legend.position = "top") +
+  labs(title = "Mean Artefact Rate v. Power",
+       y = "Mean Artefact Rate",
+       x = "Detection Power") +
+  ggsave("output/ARvPower.png", height = 7.5, width = 7.5)
+
+
+summer.GWA.perform %>%
+  dplyr::filter(!population.group %in% c("Full Liberal Swept","Full Liberal Unswept")) %>%
+  ggplot(.) + 
+  theme_bw() + 
+  geom_point(aes(x = -log10(0.05/independent_tests), y = mean.Power, fill = population.group), shape = 21) + 
+  # scale_colour_manual(values = park_palette(name = "Hawaii", 3), name = "Heritability") + 
+  scale_fill_manual(values = c("grey","#358F39","#AD6177","#ADF6B1","#5E4049"), 
+                    name = "Population Designation") + 
+  new_scale_color() +
+  geom_smooth(se = F, mapping = aes(x = -log10(0.05/independent_tests), y = mean.Power, group = population.group, colour = population.group)) + 
+  scale_colour_manual(values = c("grey","#358F39","#AD6177","#ADF6B1","#5E4049"), 
+                    name = "Population Designation") + 
+  facet_grid(h2~pop.size, scales = "free_y")  + 
+  theme(legend.position = "top") +
+  labs(title = "EIGEN Independent Tests v. Power",
+       x = "Number of Independent Tests",
+       y = "Detection Power") + 
+  ggsave("output/EIGENtestsvPower.png", height = 7.5, width = 7.5)
+  
+
+
+clean.summer.GWA.perform <- summer.GWA.perform %>%
+  dplyr::select(strain_set, h2, mean.Power, sd.Power, mean.Artefact.Rate, sd.Artefact.Rate, pop.size, population.group, independent_tests, everything()) %>%
+  dplyr::mutate(P.A = mean.Power/mean.Artefact.Rate)
+
+
+
+Sim.QTL.VarExp <- summer.GWA.df %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = cut(Simulated.QTL.VarExp, breaks = unique(c(seq(0,0.2,by = 0.025), 
+                                                                              seq(0.2,0.8,by = 0.1))))) %>%
+  dplyr::filter(designation != "False.Discovery") %>%
+  dplyr::group_by(strain_set, Sim.Var.Exp.Bin, designation, pop.size) %>%
+  dplyr::summarise(n.QTL = n()) %>%
+  tidyr::pivot_wider(names_from = designation, values_from = n.QTL)
+Sim.QTL.VarExp[,4:6][is.na(Sim.QTL.VarExp[,4:6])] <- 0
+Sim.QTL.VarExp$nSimulatedQTL <- rowSums(Sim.QTL.VarExp[,4:6])
+Sim.QTL.VarExp$pct.Detected.CV <- Sim.QTL.VarExp$Detected.CV/Sim.QTL.VarExp$nSimulatedQTL
+
+sim.var.exp <- Sim.QTL.VarExp %>%
+  dplyr::mutate(Sim.Var.Exp.Bin = gsub(as.character(Sim.Var.Exp.Bin), pattern = "\\(", replacement = "") %>%
+                  gsub(., pattern = "\\]", replacement = "") %>%
+                  gsub(., pattern = ",", replacement = "-")) %>%
+  dplyr::left_join(.,pop.demographics) %>%
+  dplyr::mutate(pop.size = as.factor(pop.size),
+                population.group = as.factor(population.group))
+
+sim.var.exp$population.group <- factor(sim.var.exp$population.group, levels = c("Strict Swept","Soft Swept",
+                                                                    "Strict Unswept","Soft Unswept",
+                                                                    "Subsampled",
+                                                                    "Full Liberal Swept","Full Liberal Unswept"))
+ggplot(sim.var.exp, mapping = aes(x = Sim.Var.Exp.Bin, y = pct.Detected.CV, group = population.group)) + 
+  theme_bw() +
+  geom_smooth(mapping = aes(colour = population.group), se = F, span = 0.5) +
+  geom_point(aes(colour = population.group), alpha = 0.5) +
+  facet_wrap(.~pop.size, nrow = 2) + 
+  scale_colour_manual(values = c("#358F39","#ADF6B1",
+                               "#5E4049","#AD6177","grey","#138019","purple"), 
+                    name = "Population Designation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + 
+  geom_hline(yintercept = 0.8) + 
+  labs(x = "Simulated QTL Variance Explained",
+       y = "Percent of Simulated Variants With Significant Association") + 
+  ggsave("output/summerGWA.strain.set.var.curve.exp.png", height = 8, width = 16)
+
+sim.var.exp %>%
+  dplyr::group_by(Sim.Var.Exp.Bin, population.group, pop.size) %>%
+  dplyr::summarise(mean.Power = mean(pct.Detected.CV)*100) %>%
+  dplyr::filter(mean.Power > 80) %>%
+  tidyr::pivot_wider(names_from = Sim.Var.Exp.Bin, values_from = mean.Power) %>%
+  dplyr::filter(pop.size %in% c(192,357,183))
+
+
+summer.GWA.df %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>%
+  dplyr::mutate(QTL.v.peak = abs(as.numeric(POS)-as.numeric(peak.POS))) %>%
+  dplyr::filter(pop.size == 144) %>% 
+  ggplot(., mapping = aes(x = interval_size/1000000, fill = population.group)) +
+  theme_bw() + 
+  geom_density() + 
+  scale_fill_manual(values = c("#ADF6B1","#AD6177","#358F39","#5E4049","grey"), 
+                    name = "Population Designation") + 
+  facet_grid(designation~population.group) + 
+  labs(x = " QTL ROI Width (Mb)",
+       y = "Density") + 
+  ggsave("output/summerGWA.strain.resolution.png", height = 8, width = 16)
+
+
+
+chrom.breakdown <- summer.GWA.df %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  dplyr::filter(designation != "False.Discovery") %>% 
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>% 
+  dplyr::group_by(CHROM, population.group, designation, pop.size) %>%
+  dplyr::summarise(n = n())
+chrom.breakdown$population.group <- factor(chrom.breakdown$population.group, levels = c("Strict Swept","Soft Swept",
+                                                                                                "Strict Unswept","Soft Unswept",
+                                                                                                "Subsampled",
+                                                                                                "Full Liberal Swept","Full Liberal Unswept"))
+
+chrom.breakdown.pct <- summer.GWA.df %>%
+  dplyr::filter(algorithm == "MIXED") %>%
+  droplevels() %>%
+  dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                        Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                        Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                        Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+  dplyr::filter(designation != "False.Discovery") %>%
+  tidyr::separate(col = detected.peak,
+                  into = c("peak.CHROM","peak.POS"), 
+                  sep = ":", remove = F) %>% 
+  dplyr::group_by(CHROM, population.group, pop.size) %>%
+  dplyr::summarise(total.n = n()) %>%
+  dplyr::left_join(chrom.breakdown,.) %>%
+  dplyr::mutate(pct = n/total.n)
+chrom.breakdown.pct$population.group <- factor(chrom.breakdown.pct$population.group, levels = c("Strict Swept","Soft Swept",
+                                                                                                "Strict Unswept","Soft Unswept",
+                                                                                                "Subsampled",
+                                                                                                "Full Liberal Swept","Full Liberal Unswept"))
+chrom.breakdown.pct %>%
+  dplyr::filter(pop.size == 144) %>%
+  ggplot(., mapping = aes(x = population.group, y = n, fill = population.group)) + 
+  theme_bw() + 
+  geom_col() + 
+  facet_grid(designation~CHROM, scales = "free") + 
+  scale_fill_manual(values = c("#358F39","#ADF6B1",
+                               "#5E4049","#AD6177","grey","#138019","purple"), 
+                    name = "Population Designation") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  labs(x = "Population Designation",
+       y = "Number of QTL")
+
+chrom.breakdown.pct %>%
+  dplyr::filter(pop.size == 144) %>%
+  ggplot(., mapping = aes(x = population.group, y = pct, fill = population.group)) + 
+  theme_bw() + 
+  geom_col() + 
+  facet_grid(designation~CHROM, scales = "free") + 
+  scale_fill_manual(values = c("#358F39","#ADF6B1",
+                               "#5E4049","#AD6177","grey","#138019","purple"), 
+                    name = "Population Designation") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  labs(x = "Population Designation",
+       y = "QTL Categories")
+
+
+
+
+
+
+# Population specific analysis
+
+# Overall mapping results
+mapping.populations <- as.list(unique(summer.GWA.df$strain_set))
+population.mapping.summary <- function(x){
+
+  if(x %in% summer.GWA.df$strain_set){
+    summary <- summer.GWA.df %>%
+      dplyr::filter(strain_set == x) %>%
+      dplyr::mutate(designation = case_when(Simulated == TRUE & Detected == TRUE & aboveBF == TRUE ~ "Detected.CV",
+                                            Simulated == TRUE & Detected == FALSE & aboveBF == FALSE ~ "Missed.CV",
+                                            Simulated == TRUE & Detected == TRUE & aboveBF == FALSE ~ "CV.Not.Significant.In.Interval",
+                                            Simulated == FALSE & Detected == TRUE & aboveBF == TRUE ~ "False.Discovery")) %>%
+      dplyr::mutate(Rep = as.numeric(Rep))
+
+    Power.summary <- Power %>%
+      dplyr::filter(strain_set == x) %>%
+      dplyr::select(strain_set, h2, mean.Power, pop.size, population.group)
+    mapping.summary <- ggplot() +
+      theme_bw() +
+      geom_pointrange(data = summary[which(summary$Detected == TRUE),],
+                      mapping = aes(x = POS/1000000, y = Rep, xmin = startPOS/1000000, xmax = endPOS/1000000, colour = designation)) +
+      geom_point(data = summary[which(summary$Detected == FALSE),],
+                 mapping = aes(x = POS/1000000, y = Rep, colour = designation)) +
+      facet_grid(h2~CHROM, scales = "free_x") +
+      scale_y_continuous(breaks = seq(0,30,5)) +
+      scale_colour_manual(values = c("lightblue","darkgreen","darkred","grey90"), name = "Result") +
+      theme(legend.position = "top",
+            panel.grid = element_blank()) +
+      labs(title = paste(x, unique(summary$population.group), unique(summary$pop.size), sep = "; "),
+           x = "Genomic position (Mb)") +
+      ggsave(paste("output/mapping.summary",x,unique(summary$pop.size),"png",sep = "."), width = 10, height = 10)
+    mapping.summary
+
+  } else {
+    print("Population not simulated")
+  }
+
+}
+# purrr::map(mapping.populations, population.mapping.summary)
+
+
+pull.unswept.pop <- function(strainset){
+  soft.unswept <- data.table::fread(paste("output/subsampled.liberal.unswept.strains_20210426_n144_reps50.txt", 
+                                 sep = "/"), sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+  strict.unswept <- data.table::fread(paste("output/subsampled.unswept.strains_20210409_n144_reps50.txt", 
+                                 sep = "/"), sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+  
+  unswept <- soft.unswept %>%
+    dplyr::full_join(.,strict.unswept)
+  
+  strainlist <- unswept[which(unswept$strain_set == strainset),]$strains %>%
+    strsplit(., split = ",") %>%
+    data.frame() %>%
+    `colnames<-`(c("strains"))
+  
+  write.csv(strainlist, file = paste0("output/",strainset,"_list.txt"), quote = F, row.names = F)
+  strainlist
+}
+pull.swept.pop <- function(strainset){
+  soft.swept.144 <- data.table::fread(paste("output/subsampled.liberal.swept.strains_20210426_n144_reps50.txt", 
+                                 sep = "/"), sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+  
+  soft.swept.192 <- data.table::fread(paste("output/subsampled.liberal.swept.strains_20210504_n192_reps50.txt", 
+                                 sep = "/"), sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+    
+  strict.swept <- data.table::fread(paste("output/subsampled.swept.strains_20210409_n144_reps50.txt", 
+                                 sep = "/"), sep = " ", header = F) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+  
+  swept <- soft.swept.144 %>%
+    dplyr::full_join(.,soft.swept.192) %>%
+    dplyr::full_join(.,strict.swept)
+  
+  strainlist <- swept[which(swept$strain_set == strainset),]$strains %>%
+    strsplit(., split = ",") %>%
+    data.frame() %>%
+    `colnames<-`(c("strains")) %>%
+    dplyr::arrange(strains)
+  
+  write.csv(strainlist, file = paste0("output/",strainset,"_list.txt"), quote = F, row.names = F)
+  strainlist
+}
+pull.subsampled.pop <- function(strainset){
+  
+  subsampled <- purrr::map(list.files(path = "output/", pattern = "subsampled.strains_20210409"), 
+             function(x){data.table::fread(paste0("output/",x), sep = " ", header = F)}) %>%
+    Reduce(rbind,.) %>%
+    dplyr::rename(strain_set = V1, strains = V2)
+  
+  strainlist <- subsampled[which(subsampled$strain_set == strainset),]$strains %>%
+    strsplit(., split = ",") %>%
+    data.frame() %>%
+    `colnames<-`(c("strains")) %>%
+    dplyr::arrange(strains)
+  
+  write.csv(strainlist, file = paste0("output/",strainset,"_list.txt"), quote = F, row.names = F)
+  strainlist
+}
+
+pop = "underground.gartersnake"
+poop <- pull.swept.pop(pop) %>%
+  as.data.frame()
+
+# pull.subsampled.pop(pop)
+population.mapping.summary(pop)
+
+clingy.unicorn <- pull.swept.pop("clingy.unicorn")
+underground.gartersnake <- pull.swept.pop("underground.gartersnake")
+
+
+underground.gartersnake.simulated.phenos <- list.files(path = "data/", pattern = "underground.gartersnake.sims.phen")
+UG.list <- list()
+for(i in 1:length(underground.gartersnake.simulated.phenos)){
+  UG.list[[i]] <- data.table::fread(paste0("data/",underground.gartersnake.simulated.phenos[[i]])) %>%
+    dplyr::select(V1, V3) %>%
+    `colnames<-`(c("strain",paste("underground_gartersnake",i,sep = "_")))
+}
+underground.gartersnake.mapping.format <- purrr::reduce(UG.list, full_join) %>%
+  as.data.frame()
+write_tsv(underground.gartersnake.mapping.format, file = "output/underground.gartersnake.mapping.tsv")
+
+
+
+# # Haplotype breakdown
+# haplotypes.df <- data.table::fread("data/haplotype_df_isotype.bed")
+# names(haplotypes.df) <- c("chromosome", "start", "stop", "haplotype", "isotype", "plotpoint", "segment", "color", "color_new")
+# unique(haplotypes.df$isotype)[!unique(haplotypes.df$isotype) %in% unique(haplotypes.df$haplotype)] 
+# yeet <- mapping.populations[[1]]
+# 
+# haplotypes.df %>%
+#   dplyr::select(V4,V8) %>%
+#   dplyr::group_by(V4) %>%
+#   dplyr::count(V8) %>%
+#   View()
+
+```
+
+
